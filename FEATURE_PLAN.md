@@ -37,10 +37,11 @@ So the public URL exposes no client data, and the tool is safe to share with any
 **If a password-protected site is needed later** (for example, a link that opens straight onto a specific client project), alternatives are Cloudflare Pages with Cloudflare Access (free up to 50 users), Netlify or Vercel with password protection, or an internal company server. Confirm with IT before hosting anything that holds project data.
 
 **Tasks**
-- [ ] Create the GitHub repo and enable Pages
-- [ ] Move to a small build setup (Vite) as libraries are added; deploy with a GitHub Actions workflow on push to `main`
-- [ ] Replace the sample program with a clearly fictional demo project
-- [ ] Add a "Load project" start screen: demo, or import files
+- [x] Create the GitHub repo and enable Pages
+- [x] Deploy with a GitHub Actions workflow on push to `main` (`.github/workflows/pages.yml`)
+- [ ] Move to a small build setup (Vite) as libraries are added, and add the build step to the deploy workflow
+- [x] Replace the sample program with a clearly fictional demo project
+- [ ] Add a "Load project" start screen: demo, or import files (deferred to feature 3, when import exists)
 
 ---
 
