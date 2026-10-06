@@ -1,4 +1,4 @@
-import {DEPTS} from '../data/demo.js';
+import {DEPTS} from '../data/project.js';
 import {state,BDEF,drag,hoverId} from '../state.js';
 import {S,SLAB,CLEAR,BASE,GAP} from './constants.js';
 import {B,D,grid,edgeMat,edgeSelMat,dropBox,slotBox,dropInk,dropAlert} from './scene.js';

@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import fs from 'node:fs';
 
 // Replays a fixed scenario on the demo program. Each step checks a text snapshot of the
 // panels and overlay labels plus a screenshot of the 3D stage; a few steps also check the
@@ -85,14 +86,20 @@ const steps = [
   ['narrow-viewport', p => p.setViewportSize({width: 420, height: 900})],
 ];
 
-test('demo program scenario', async ({page}) => {
-  test.setTimeout(180_000);
+/* opens the app on the demo; returns the list that collects uncaught page errors */
+async function open(page) {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   // Block web fonts so the test runs offline and fallback fonts keep rendering stable.
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await page.goto('/');
   await settle(page);
+  return errors;
+}
+
+test('demo program scenario', async ({page}) => {
+  test.setTimeout(180_000);
+  const errors = await open(page);
 
   for (const [i, [name, act]] of steps.entries()) {
     const id = String(i).padStart(2, '0') + '-' + name;
@@ -105,4 +112,80 @@ test('demo program scenario', async ({page}) => {
     });
   }
   expect(errors).toEqual([]);
+});
+
+test('downloaded template imports back to the same model', async ({page}) => {
+  const errors = await open(page);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#tools a[download]')]);
+  expect(download.suggestedFilename()).toBe('program_template.xlsx');
+  await page.setInputFiles('#importFile', {
+    name: 'program_template.xlsx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: fs.readFileSync(await download.path()),
+  });
+  const body = page.locator('#importBody');
+  await expect(body.locator('.kv')).toContainText('376,000 SF');
+  await expect(body.locator('.kv')).toContainText('36 · 0');
+  await expect(body.locator('.msgs')).toHaveCount(0);
+  await page.click('#importOk');
+  await expect(page.locator('#importDlg')).toBeHidden();
+  await expect(page.locator('#psub')).toHaveText('program_template.xlsx · imported');
+  await settle(page);
+  // the imported template must render exactly like the built-in demo
+  await expect(page.locator('#stage')).toHaveScreenshot('00-initial.png');
+
+  page.once('dialog', d => d.accept());
+  await page.click('#left [data-act=demo]');
+  await expect(page.locator('#psub')).toHaveText('Fictional demo campus · placeholder figures');
+  await expect(page.locator('#left [data-act=demo]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('CSV import reports problems and fills the Unassigned tray', async ({page}) => {
+  const errors = await open(page);
+  await page.setInputFiles('#importFile', new URL('./fixtures/program-with-issues.csv', import.meta.url).pathname);
+  const body = page.locator('#importBody');
+  await expect(body.locator('.kv')).toContainText('37,300 SF');
+  expect(await body.innerText()).toMatchSnapshot('csv-summary.txt');
+  await page.click('#importOk');
+  await settle(page);
+
+  const right = page.locator('#right');
+  const tray = right.locator('.blk', {hasText: 'Unassigned · 3'});
+  await expect(tray.locator('.chip')).toHaveText([/Sleep Lab/, /Pharmacy/, /Rooftop Garden/]);
+  expect.soft(await domSnapshot(page)).toMatchSnapshot('csv-imported.json');
+  await expect.soft(page.locator('#stage')).toHaveScreenshot('csv-imported.png');
+
+  // place a tray department on Level 3 of the selected building, then send it back
+  await tray.locator('.chip', {hasText: 'Sleep Lab'}).click();
+  await expect(right.locator('.dcard')).toContainText('Sleep Medicine · Unassigned');
+  await page.selectOption('#lvl', '2');
+  await expect(right).toContainText('Unassigned · 2');
+  await expect(right.locator('.lvl', {hasText: 'Level 3'})).toContainText('Sleep Lab');
+  await settle(page);
+  await expect.soft(page.locator('#stage')).toHaveScreenshot('csv-placed.png');
+  await page.selectOption('#lvl', '-1');
+  await expect(right).toContainText('Unassigned · 3');
+
+  // notes from the file show on the department card
+  await right.locator('.chip', {hasText: 'Emergency Department'}).click();
+  await expect(right.locator('.dnotes')).toHaveText('Ambulance entrance on the north side');
+
+  // Reset layout returns to the imported layout, not the demo
+  await page.selectOption('#lvl', '-1');
+  await expect(right).toContainText('Unassigned · 4');
+  await page.click('#tools [data-act=resetlayout]');
+  await expect(right).toContainText('Unassigned · 3');
+  await expect(page.locator('#psub')).toHaveText('program-with-issues.csv · imported');
+  expect(errors).toEqual([]);
+});
+
+test('a file without the required columns is rejected', async ({page}) => {
+  await open(page);
+  await page.setInputFiles('#importFile', {name: 'rooms.csv', mimeType: 'text/csv', buffer: Buffer.from('Room,Size\nExam 1,120\n')});
+  await expect(page.locator('#importBody .msgs.err')).toContainText('The Program sheet has no Department or SF column.');
+  await expect(page.locator('#importOk')).toBeHidden();
+  await page.click('#importDlg button[value=cancel]');
+  await expect(page.locator('#importDlg')).toBeHidden();
+  await expect(page.locator('#psub')).toHaveText('Fictional demo campus · placeholder figures');
 });
