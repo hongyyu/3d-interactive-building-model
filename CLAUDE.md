@@ -11,9 +11,19 @@ npm install
 npm run dev       # dev server on :5173 with hot reload
 npm run build     # production build into dist/
 npm run preview   # serve dist/
+npm run test:visual          # Playwright visual regression test (first run: npx playwright install chromium)
+npm run test:visual:update   # re-record baselines after an intended change
 ```
 
-There is no lint or test tooling. Vite 8 needs Node 20.19+ or 22.12+.
+There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
+
+- **Visual test** (`tests/visual.spec.js`): builds the app, serves `dist/` on :4174, and replays a 32-step scenario on the demo program. Each step checks two things:
+  - an exact text snapshot of `#left`, `#right` and the overlay labels
+  - a screenshot of `#stage`, plus full-page shots for 3 steps
+
+  Screenshots allow `threshold: 0.01`, which absorbs ±1 SwiftShader antialiasing noise. Web fonts are blocked so the run is offline and stable. Run it after any refactor that should not change behavior.
+
+  The scenario relies on demo ids (`tower`, `opp`, `cup`, `inf`, `amb`) and label names. If the demo data or UI changes on purpose, update the scenario or re-record the baselines, and review the diffs first. Baselines are macOS-specific (`*-darwin.*`).
 
 - **Deploy:** every push to `main` runs `.github/workflows/pages.yml`, which runs `npm ci` and `npm run build`, then publishes `dist/` to GitHub Pages at https://hongyyu.github.io/3d-interactive-building-model/. `vite.config.js` uses `base: './'` so asset paths work under that subpath. Only `dist/` is served. Static files that must ship as-is (such as planned import templates) go in `public/`.
 - **Roadmap:** `FEATURE_PLAN.md` describes the planned phases: CSV/XLSX program import, layout options and compare, JPEG/CSV export, Rhino `.3dm` import and vertical circulation. Upgrading Three.js beyond r128 is a Phase 3 task. Until then, stick to the r128 API, and import any addons from `three/examples/jsm/...` of 0.128.0.
