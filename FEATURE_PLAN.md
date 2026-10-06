@@ -41,7 +41,7 @@ So the public URL exposes no client data, and the tool is safe to share with any
 - [x] Deploy with a GitHub Actions workflow on push to `main` (`.github/workflows/pages.yml`)
 - [x] Move to a small build setup (Vite), and add the build step to the deploy workflow (`src/` modules; Three.js pinned at r128 until Phase 3)
 - [x] Replace the sample program with a clearly fictional demo project
-- [ ] Add a "Load project" start screen: demo, or import files (deferred to feature 3, when import exists)
+- [ ] Add a "Load project" start screen: demo, or import files (for now the toolbar's "Import program…" and the panel's "Load demo project" cover this)
 
 ---
 
@@ -114,11 +114,13 @@ Layer structure:
 - Provide a downloadable **template** (`program_template.csv` / `.xlsx`).
 
 **Tasks**
-- [ ] CSV/XLSX parser with column mapping
-- [ ] Import summary and error report
-- [ ] Unassigned tray, with drag into the model
-- [ ] Re-import / merge logic
-- [ ] Template download
+- [x] CSV/XLSX parser (SheetJS, loaded on demand). Headers are matched against common aliases ("Dept", "Area", "DGSF"…)
+- [ ] Interactive column mapping for headers the aliases don't recognize
+- [x] Import summary and error report (per-row notes; blocking errors disable "Replace project")
+- [x] Unassigned tray: select a department, then pick a level in the selected building
+- [ ] Drag from the Unassigned tray into the model
+- [ ] Re-import / merge logic (for now an import replaces the whole project, with Level placement taken from the file)
+- [x] Template download: `program_template.xlsx`, with Program, Buildings and Categories sheets, dropdowns, and the demo as example rows. Buildings can be defined in the template, so a campus can be modelled without Rhino
 
 ---
 

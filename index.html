@@ -19,6 +19,9 @@
       <button type="button" data-mode="stack" aria-pressed="false">Section Stack</button>
     </div>
     <div class="tools" id="tools">
+      <a class="btn" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">Download template</a>
+      <button type="button" class="btn" data-act="import" title="Load a program from Excel (.xlsx) or CSV">Import program…</button>
+      <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
       <button type="button" class="btn" data-act="labels" aria-pressed="true">Labels</button>
       <button type="button" class="btn" data-act="resetview">Reset view</button>
       <button type="button" class="btn" data-act="resetlayout">Reset layout</button>
@@ -34,6 +37,15 @@
   </main>
   <aside class="side right" id="right"></aside>
 </div>
+<dialog class="dlg" id="importDlg" aria-labelledby="importTitle">
+  <form method="dialog">
+    <div class="dlg-body" id="importBody"></div>
+    <div class="dlg-actions">
+      <button type="submit" class="btn" value="cancel">Cancel</button>
+      <button type="submit" class="btn primary" value="ok" id="importOk">Replace project</button>
+    </div>
+  </form>
+</dialog>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
