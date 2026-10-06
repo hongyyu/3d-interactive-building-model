@@ -1,9 +1,9 @@
-import {DEPTS,BUILDINGS} from '../data/demo.js';
-import {state,INIT_LEVELS,INIT_AREAS} from '../state.js';
+import {PROJECT,DEPTS,BUILDINGS,setProjectData} from '../data/project.js';
+import {state,INIT_LEVELS,INIT_AREAS,initState} from '../state.js';
 import {hintEl} from '../dom.js';
-import {clamp} from '../util.js';
-import {B,D,setLabelHTML} from '../scene/scene.js';
-import {retarget,setViewRate} from '../scene/view.js';
+import {$,clamp} from '../util.js';
+import {B,D,setLabelHTML,clearScene,buildScene,fitSite} from '../scene/scene.js';
+import {retarget,snapView,setViewRate} from '../scene/view.js';
 import {rebuildFloorTags,updateFloorTagText} from '../scene/overlay.js';
 import {relayout,levelOf} from '../layout/plan.js';
 import {renderRight,refreshUI} from './panels.js';
@@ -42,18 +42,34 @@ export function setMode(m){
 }
 export function setArea(id,v){
   if(!id||!isFinite(v))return;
-  DEPTS[id].a=clamp(Math.round(v),500,80000);
+  DEPTS[id].a=clamp(Math.round(v),500,500000);
   setLabelHTML(D[id]); relayout(false); refreshUI();
 }
+/* f is a level of the selected building, or -1 for the Unassigned tray */
 export function moveDeptToLevel(id,f){
-  const loc=levelOf(state.sel,id); if(!loc||loc.f===f)return;
-  const lv=state.levels[state.sel];
-  lv[loc.f].splice(loc.i,1); lv[f].push(id);
+  const lv=state.levels[state.sel], loc=levelOf(state.sel,id), t=state.unassigned.indexOf(id);
+  if(loc){ if(loc.f===f)return; lv[loc.f].splice(loc.i,1); }
+  else if(t>=0){ if(f<0)return; state.unassigned.splice(t,1); }
+  else return;
+  if(f<0) state.unassigned.push(id); else lv[f].push(id);
   relayout(false); refreshUI();
 }
 export function resetLayout(){
-  JSON.parse(INIT_LEVELS).forEach((lv,i)=>{state.levels[BUILDINGS[i].id]=lv;});
+  const init=JSON.parse(INIT_LEVELS);
+  init.levels.forEach((lv,i)=>{state.levels[BUILDINGS[i].id]=lv;});
+  state.unassigned=init.unassigned;
   for(const k in INIT_AREAS){ DEPTS[k].a=INIT_AREAS[k]; setLabelHTML(D[k]); }
   state.selDept=null; state.isolate=null;
   relayout(false); refreshUI();
+}
+/* replaces the whole project (demo or imported) and rebuilds the scene from it */
+export function openProject(p){
+  setProjectData(p);
+  initState();
+  clearScene(); buildScene(); fitSite();
+  relayout(true);
+  rebuildFloorTags();
+  refreshUI();
+  $('#ptitle').textContent=PROJECT.title; $('#psub').textContent=PROJECT.sub;
+  retarget(false); snapView();
 }

@@ -1,17 +1,15 @@
-import {PROJECT} from './data/demo.js';
+import {DEMO} from './data/demo.js';
 import {$,RM} from './util.js';
 import {stage,hintEl} from './dom.js';
-import {renderer,scene,camera,buildScene} from './scene/scene.js';
-import {retarget,snapView,stepView,updateCamera,resize} from './scene/view.js';
+import {renderer,scene,camera} from './scene/scene.js';
+import {retarget,stepView,updateCamera,resize} from './scene/view.js';
 import {updateScene} from './scene/update.js';
-import {rebuildFloorTags,updateOverlay} from './scene/overlay.js';
-import {relayout} from './layout/plan.js';
-import {refreshUI} from './ui/panels.js';
-import {HINTS} from './ui/actions.js';
+import {updateOverlay} from './scene/overlay.js';
+import {HINTS,openProject} from './ui/actions.js';
 import {bindControls} from './ui/controls.js';
 import {bindPointer} from './ui/pointer.js';
 
-$('#ptitle').textContent=PROJECT.title; $('#psub').textContent=PROJECT.sub;
+$('#ptitle').textContent=DEMO.title; $('#psub').textContent=DEMO.sub;
 
 /* ---------- loop ---------- */
 let lastT=performance.now();
@@ -28,15 +26,11 @@ function frame(now){
 
 /* ---------- boot ---------- */
 function boot(){
-  buildScene();
   bindControls();
   bindPointer();
   resize();
-  relayout(true);
-  rebuildFloorTags();
-  refreshUI();
+  openProject(DEMO);
   hintEl.textContent=HINTS.mass;
-  retarget(false); snapView();
   if('ResizeObserver' in window){
     let rt=0;
     new ResizeObserver(()=>{ resize(); clearTimeout(rt); rt=setTimeout(()=>{ retarget(true); },60); }).observe(stage);

@@ -22,19 +22,28 @@ npm run preview   # serve dist/ locally
 ```
 
 ## Visual regression test
-`npm run test:visual` builds the app and replays a fixed 32-step scenario in headless Chromium. It covers the view modes, selection, area edits, dragging, camera moves, reset, present mode and a narrow window. At each step it compares a screenshot of the 3D stage and a text snapshot of the panels against the baselines in `tests/visual.spec.js-snapshots/`.
+`npm run test:visual` builds the app and runs four Playwright tests in headless Chromium:
+- **Demo scenario:** replays 32 steps covering the view modes, selection, area edits, dragging, camera moves, reset, present mode and a narrow window. At each step it compares a screenshot of the 3D stage and a text snapshot of the panels against the baselines in `tests/visual.spec.js-snapshots/`.
+- **Template round trip:** downloads the template and imports it back, then checks that the model renders exactly like the demo.
+- **CSV import with problems:** imports `tests/fixtures/program-with-issues.csv` and checks the import summary and the Unassigned tray.
+- **Rejected file:** checks that a file with the wrong columns can't be loaded.
 
 - First time only: `npx playwright install chromium`
 - After an intended visual change: review the failures with `npx playwright show-report`, then re-record the baselines with `npm run test:visual:update` and commit them.
 - The baselines were rendered on macOS. Other platforms need their own.
 
 ## Use your own program
-This repo and its site are public. The bundled program is a fictional demo, so do not commit real client data here.
+1. Click **Download template**. You get an Excel workbook pre-filled with the fictional demo campus. It has four sheets:
+   - **Instructions**
+   - **Program:** department, SF, category, building, level, colour, notes
+   - **Buildings:** floor plate, floor-to-floor height, number of levels, site position
+   - **Categories:** name and colour
+2. Replace the example rows with your own. Building and Category cells have dropdowns. Leave Level blank for any department you want to place later.
+3. Click **Import program…** and choose the file (`.xlsx`, or a `.csv` holding just the Program columns). A summary lists what was read and any rows with problems. **Replace project** then loads it.
 
-To try a real program locally, edit `src/data/demo.js`:
-- `CATS`: department categories and colors
-- `DEPTS`: id → name, category, area in SF
-- `BUILDINGS`: floor plate (w × d ft), floor-to-floor (fh), site position (x, z), and the department ids on each level, starting at Level 1
+Departments without a building or level wait in the **Unassigned** tray in the right panel. Select one and pick a level to place it in the selected building. **Reset layout** returns to the imported layout, and **Load demo project** (left panel) brings back the demo.
+
+Files are read in the browser and never uploaded. The repo and the site are public, so keep real client data out of the repo; the bundled demo (`src/data/demo.js`) must stay fictional.
 
 ## Deployment
 Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`, which runs `npm run build` and publishes only `dist/`. To redeploy without a new commit, run the workflow manually from the Actions tab.
