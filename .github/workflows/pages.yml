@@ -23,17 +23,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Publish only the app itself, not the repo's docs and notes.
-      - name: Stage site
-        run: |
-          mkdir _site
-          cp index.html _site/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Vite writes the app to dist/; only that folder is published.
+      - run: npm run build
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: dist
 
       - id: deployment
         uses: actions/deploy-pages@v4
