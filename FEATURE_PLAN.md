@@ -1,4 +1,4 @@
-# Campus Massing Model — Feature Plan
+# 3D Interactive Building Model — Feature Plan
 
 **Goal:** turn the current single-page prototype into a web tool that medical planners can use on any project: load a building model and a program, study stacking options, plan vertical circulation, and export diagrams and data for client meetings.
 
@@ -24,7 +24,7 @@ Effort: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 
 ## 1. Online hosting
 
-**Can GitHub Pages work? Yes.** The tool is a static site: HTML, JS and CSS with no server. GitHub Pages serves exactly that, for free, at `https://<user>.github.io/campus-massing/`.
+**Can GitHub Pages work? Yes.** The tool is a static site: HTML, JS and CSS with no server. GitHub Pages serves exactly that, for free, at `https://<user>.github.io/3d-interactive-building-model/`.
 
 **Data privacy: keep project data out of the repo.** A GitHub Pages site is public on GitHub Free, and with GitHub Pro or Team even a private repo publishes a public site. Access-controlled Pages needs GitHub Enterprise Cloud. The design below sidesteps this:
 
