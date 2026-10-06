@@ -9,9 +9,11 @@ export default defineConfig({
   workers: 1,
   reporter: [['list'], ['html', {open: 'never'}]],
   expect: {
-    // SwiftShader antialiasing leaves ±1 colour noise on a few edge pixels between frames.
-    // threshold 0.01 absorbs that (up to ~±4 levels per channel); any larger change fails.
-    toHaveScreenshot: {threshold: 0.01, maxDiffPixels: 0},
+    // SwiftShader antialiasing is not perfectly repeatable: edge pixels wobble by ±1 colour level,
+    // and in roughly 1 run in 15 a single short edge shifts by ~10 levels (about 35 px).
+    // threshold 0.01 absorbs the first and maxDiffPixels 100 the second; real changes differ
+    // by hundreds to thousands of pixels (a 0.3 -> 0.25 edge-opacity change: 149 to 4724).
+    toHaveScreenshot: {threshold: 0.01, maxDiffPixels: 100},
   },
   use: {
     baseURL: 'http://localhost:4174/',
