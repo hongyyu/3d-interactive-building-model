@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Campus Massing Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0}
+[hidden]{display:none!important}
+/* Layout: white drawing-sheet app. Slim top bar holds the three view modes; quiet building index on the left; full-bleed WebGL stage; program ledger on the right. */
+:root{
+  --bg:#ffffff; --panel:#fafbfc; --ink:#141922; --ink-2:#4b5565; --ink-3:#8a93a3;
+  --line:#e4e7ec; --line-2:#d3d8e0; --alert:#c8234b;
+  --ui:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:13px;line-height:1.4}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.app{height:100%;display:grid;min-height:0;
+  grid-template-columns:244px minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"top top top" "left stage right"}
+.app.present{grid-template-columns:0 minmax(0,1fr) 0}
+.app.present .side{display:none}
+.top{grid-area:top;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+.brand{min-width:0}
+.brand h1{margin:0;font:700 15px/1.2 var(--ui);letter-spacing:.01em}
+.brand p{margin:2px 0 0;font:400 10.5px/1.2 var(--mono);color:var(--ink-3)}
+.seg{display:flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 14px;font:500 12.5px/1 var(--ui);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:#f3f5f8}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:7px 10px;font:500 12px/1 var(--ui);cursor:pointer}
+.btn:hover{background:#f3f5f8}
+.btn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.side{background:var(--panel);overflow:auto;min-width:0;padding:14px 16px;display:flex;flex-direction:column;gap:20px}
+.left{grid-area:left;border-right:1px solid var(--line)}
+.right{grid-area:right;border-left:1px solid var(--line)}
+.eyebrow{margin:0 0 4px;font:500 10px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.title{margin:0 0 10px;font:700 18px/1.2 var(--ui);text-wrap:balance}
+.blk h2.h{margin:0 0 8px;font:500 10px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.blist{display:flex;flex-direction:column;gap:6px}
+.bcard{display:flex;flex-direction:column;gap:3px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer}
+.bcard:hover{border-color:var(--line-2)}
+.bcard.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.bcard .bn{font-weight:600;font-size:13px}
+.bcard .bm{font:400 10.5px/1.2 var(--mono);color:var(--ink-3)}
+.meter{display:block;height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
+.meter i{display:block;height:100%;background:var(--ink)}
+.link{margin-top:8px;background:none;border:0;padding:0;color:var(--ink-2);font:500 12px var(--ui);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.lgl{display:flex;flex-direction:column;gap:2px}
+.lg{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;border-radius:6px;padding:5px 6px;text-align:left;cursor:pointer}
+.lg:hover{background:#eff1f5}
+.lg.on{background:#e6e9ef}
+.lg i{width:11px;height:11px;border-radius:3px;flex:none}
+.lg span{flex:1;min-width:0;font-size:12px}
+.lg em{font:400 10.5px var(--mono);font-style:normal;color:var(--ink-3)}
+.lg.zero{opacity:.45}
+.kv{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.kv div{min-width:0}
+.kv dt{font:500 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.kv dd{margin:2px 0 0;font:500 12.5px/1.3 var(--mono)}
+.dcard{background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.dhead{display:flex;gap:10px;align-items:flex-start}
+.dhead i{width:12px;height:12px;border-radius:3px;margin-top:4px;flex:none}
+.dhead div{flex:1;min-width:0}
+.dhead h3{margin:0;font:600 14px/1.25 var(--ui)}
+.dhead p{margin:2px 0 0;font:400 10.5px/1.3 var(--mono);color:var(--ink-3)}
+.x{background:none;border:0;font-size:18px;line-height:1;color:var(--ink-3);cursor:pointer;padding:0 4px}
+.x:hover{color:var(--ink)}
+.dcard label{font:500 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-bottom:-4px}
+.step{display:flex;gap:6px}
+.step button{width:34px;border:1px solid var(--line-2);background:#fff;border-radius:6px;font-size:16px;cursor:pointer}
+.step button:hover{background:#f3f5f8}
+.step input,.dcard select{flex:1;min-width:0;border:1px solid var(--line-2);border-radius:6px;padding:7px 9px;background:#fff;font:500 13px var(--mono)}
+.dcard select{font-family:var(--ui);font-weight:500;width:100%}
+.note{margin:0;font:400 11px/1.4 var(--mono);color:var(--ink-3)}
+.lvls{display:flex;flex-direction:column;gap:12px}
+.lvl .lh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.lvl .lh b{font:600 12px var(--ui)}
+.lvl .lh span{font:400 10.5px var(--mono);color:var(--ink-2)}
+.lvl.over .lh span{color:var(--alert);font-weight:500}
+.bar{display:flex;height:12px;border-radius:3px;overflow:hidden;background:repeating-linear-gradient(135deg,#eef0f4 0 4px,#f7f8fa 4px 8px)}
+.bseg{border:0;padding:0;height:100%;cursor:pointer;border-right:1px solid #fff;flex:none}
+.bseg.on{box-shadow:inset 0 0 0 2px var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:2px 6px;font:500 11px var(--ui);cursor:pointer;max-width:100%}
+.chip:hover{border-color:var(--line-2)}
+.chip.on{border-color:var(--ink)}
+.chip i{width:8px;height:8px;border-radius:2px;flex:none}
+.chip em{font:400 10px var(--mono);font-style:normal;color:var(--ink-3)}
+.stage{grid-area:stage;position:relative;background:#fff;overflow:hidden;min-width:0;min-height:0}
+#gl{display:block;width:100%;height:100%;touch-action:none}
+#overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;display:none;text-align:center;color:#10151d;overflow:hidden;white-space:nowrap}
+.lbl b{display:block;font:600 11px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis}
+.lbl span{display:block;font:400 10px/1.2 var(--mono);opacity:.78}
+.btag{position:absolute;left:0;top:0;display:none;pointer-events:auto;cursor:pointer;background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:5px 8px;white-space:nowrap;font:600 11.5px/1.2 var(--ui);color:var(--ink);box-shadow:0 4px 12px rgba(20,25,35,.08)}
+.btag small{display:block;font:400 10px/1.3 var(--mono);color:var(--ink-3)}
+.btag.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btag.on small{color:#b9c1cf}
+.ftag{position:absolute;left:0;top:0;display:none;white-space:nowrap;font:400 10.5px/1 var(--mono);color:var(--ink-2)}
+.ftag b{font:700 11px var(--ui);color:var(--ink);margin-right:4px}
+.ftag.over{color:var(--alert)}
+.status{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:6px;padding:7px 12px;font:500 11.5px/1.2 var(--mono);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.status.over{background:var(--alert)}
+.hint{position:absolute;left:14px;bottom:10px;right:14px;font:400 10.5px/1.3 var(--mono);color:var(--ink-3);pointer-events:none}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;margin:0;padding:24px;text-align:center;color:var(--ink-2)}
+@media (max-width:960px){
+  .app{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"top" "stage" "right" "left"}
+  .stage{height:68vh;height:68svh;min-height:380px;max-height:640px}
+  .side{border:0;border-top:1px solid var(--line)}
+  .app.present .side{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><h1 id="ptitle">Campus Massing Model</h1><p id="psub"></p></div>
+    <div class="seg" role="group" aria-label="View mode" id="modes">
+      <button type="button" data-mode="mass" aria-pressed="true">3D Massing</button>
+      <button type="button" data-mode="axon" aria-pressed="false">Axon</button>
+      <button type="button" data-mode="stack" aria-pressed="false">Section Stack</button>
+    </div>
+    <div class="tools" id="tools">
+      <button type="button" class="btn" data-act="labels" aria-pressed="true">Labels</button>
+      <button type="button" class="btn" data-act="resetview">Reset view</button>
+      <button type="button" class="btn" data-act="resetlayout">Reset layout</button>
+      <button type="button" class="btn" data-act="present" aria-pressed="false">Present</button>
+    </div>
+  </header>
+  <aside class="side left" id="left"></aside>
+  <main class="stage" id="stage">
+    <canvas id="gl" aria-label="Interactive massing model"></canvas>
+    <div id="overlay"></div>
+    <div class="status" id="status" hidden></div>
+    <div class="hint" id="hint"></div>
+  </main>
+  <aside class="side right" id="right"></aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ================= DATA: edit this block to load a real program ================= */
+const PROJECT={title:'Campus Massing Model',sub:'Sample program · placeholder figures'};
+const CATS={
+  crit:{name:'Emergency & Critical Care',color:'#e0554e'},
+  inpt:{name:'Inpatient Units',color:'#5fb27f'},
+  proc:{name:'Procedural & Surgical',color:'#26a5a0'},
+  diag:{name:'Diagnostic & Imaging',color:'#5b7fe0'},
+  amb:{name:'Ambulatory & Clinics',color:'#eeab3d'},
+  supp:{name:'Support & Plant',color:'#8d96a6'},
+  pub:{name:'Public & Admin',color:'#a478d4'}
+};
+/* n = name, c = category, a = area in departmental SF */
+const DEPTS={
+  ed:{n:'Emergency Department',c:'crit',a:14000},
+  lobby:{n:'Main Lobby & Public',c:'pub',a:6000},
+  pharm:{n:'Pharmacy',c:'supp',a:3000},
+  surg:{n:'Surgery Suite',c:'proc',a:15000},
+  pacu:{n:'PACU & Pre-op',c:'proc',a:6000},
+  spd:{n:'Sterile Processing',c:'supp',a:2500},
+  img:{n:'Imaging',c:'diag',a:12000},
+  cath:{n:'Interventional & Cath',c:'proc',a:7000},
+  lab:{n:'Laboratory',c:'diag',a:4000},
+  icu:{n:'Critical Care (ICU)',c:'crit',a:18000},
+  step:{n:'Cardiac Step-down',c:'crit',a:5000},
+  wn:{n:'Women & Newborn',c:'inpt',a:17000},
+  msa:{n:'Med-Surg Unit A',c:'inpt',a:19000},
+  msb:{n:'Med-Surg Unit B',c:'inpt',a:19000},
+  bh:{n:'Behavioral Health',c:'inpt',a:16000},
+  adm:{n:'Administration',c:'pub',a:5000},
+  rdg:{n:'Radiology Core',c:'diag',a:22000},
+  dial:{n:'Dialysis',c:'amb',a:9000},
+  olab:{n:'Outpatient Lab',c:'diag',a:8000},
+  asc:{n:'Ambulatory Surgery',c:'proc',a:24000},
+  endo:{n:'Endoscopy',c:'proc',a:9000},
+  sim:{n:'Simulation & Education',c:'pub',a:18000},
+  res:{n:'Research Labs',c:'diag',a:14000},
+  pc:{n:'Primary Care',c:'amb',a:12000},
+  rx:{n:'Retail Pharmacy',c:'supp',a:2500},
+  cafe:{n:'Café & Gathering',c:'pub',a:2500},
+  inf:{n:'Oncology Infusion',c:'amb',a:11000},
+  rad:{n:'Radiation Oncology',c:'diag',a:7000},
+  card:{n:'Cardiology Clinic',c:'amb',a:9000},
+  ortho:{n:'Orthopedics',c:'amb',a:9500},
+  neuro:{n:'Neurology',c:'amb',a:8000},
+  rehab:{n:'Pain & Rehab',c:'amb',a:8500},
+  fp:{n:'Faculty Practice',c:'pub',a:15000},
+  plant:{n:'Chillers & Boilers',c:'supp',a:7500},
+  dock:{n:'Loading Dock & Materials',c:'supp',a:3000},
+  elec:{n:'Electrical & Generators',c:'supp',a:8000}
+};
+/* w x d = floor plate in ft, fh = floor-to-floor ft, x/z = plan position in ft, levels = department ids per level (Level 1 first) */
+const BUILDINGS=[
+  {id:'tower',name:'Hospital Tower',w:200,d:120,fh:17,x:-50,z:-40,
+   levels:[['ed','lobby','pharm'],['surg','pacu','spd'],['img','cath','lab'],['icu','step'],['wn'],['msa'],['msb'],['bh','adm']]},
+  {id:'dt',name:'Diagnostic & Treatment',w:300,d:160,fh:17,x:-50,z:140,
+   levels:[['rdg','dial','olab'],['asc','endo'],['sim','res']]},
+  {id:'opp',name:'Outpatient Pavilion',w:180,d:110,fh:15,x:240,z:30,
+   levels:[['pc','rx','cafe'],['inf','rad'],['card','ortho'],['neuro','rehab'],['fp']]},
+  {id:'cup',name:'Central Utility Plant',w:120,d:90,fh:20,x:240,z:-140,
+   levels:[['plant','dock'],['elec']]}
+];
+/* ================================================================================ */
+
+const S=0.1, SLAB=0.1, CLEAR=0.07, PAD=0.08, BASE=PAD, GAP=0.05;
+const EXPLODE={mass:0,axon:1,stack:0.55};
+const GRIDOP={mass:1,axon:0.5,stack:0};
+const HINTS={
+  mass:'Drag to orbit · scroll to zoom · right-drag to pan · click a building to select · drag a department to move it',
+  axon:'Drag to orbit · scroll to zoom · drag a department to another level or position',
+  stack:'Drag a department up or down to change level, sideways to reorder · scroll to zoom'
+};
+const BDEF={}; BUILDINGS.forEach(b=>{BDEF[b.id]=b;});
+const INIT_LEVELS=JSON.stringify(BUILDINGS.map(b=>b.levels));
+const INIT_AREAS={}; for(const k in DEPTS) INIT_AREAS[k]=DEPTS[k].a;
+const state={mode:'mass',focus:'campus',sel:'tower',selDept:null,labels:true,isolate:null,levels:{}};
+BUILDINGS.forEach(b=>{state.levels[b.id]=b.levels.map(a=>a.slice());});
+
+const $=(s,r)=>(r||document).querySelector(s);
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const fk=n=>(n/1000).toFixed(1)+'k';
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const stage=$('#stage'), canvas=$('#gl'), overlay=$('#overlay'), statusEl=$('#status'), hintEl=$('#hint');
+$('#ptitle').textContent=PROJECT.title; $('#psub').textContent=PROJECT.sub;
+
+let renderer=null;
+if(window.THREE){ try{ renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true}); }catch(err){ renderer=null; } }
+if(!renderer){
+  stage.insertAdjacentHTML('beforeend','<p class="nogl">The 3D view needs WebGL, which is not available in this browser.</p>');
+  return;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setClearColor(0xffffff,1);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xffffff);
+scene.fog=new THREE.Fog(0xffffff,100,300);
+const camera=new THREE.PerspectiveCamera(30,1,0.5,1000);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.68));
+const sun=new THREE.DirectionalLight(0xffffff,0.55);
+sun.position.set(-26,60,44); sun.target.position.set(6,0,2);
+sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-60; sun.shadow.camera.right=60; sun.shadow.camera.top=60; sun.shadow.camera.bottom=-60;
+sun.shadow.camera.near=1; sun.shadow.camera.far=200;
+sun.shadow.bias=-0.0006; sun.shadow.normalBias=0.03;
+scene.add(sun); scene.add(sun.target);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.ShadowMaterial({opacity:0.12}));
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+const grid=new THREE.GridHelper(240,48,0xe6e9ee,0xe6e9ee);
+grid.position.y=0.002; grid.material.transparent=true; scene.add(grid);
+
+const boxGeo=new THREE.BoxGeometry(1,1,1);
+const edgeGeo=new THREE.EdgesGeometry(boxGeo);
+const edgeMat=new THREE.LineBasicMaterial({color:0x1b2230,transparent:true,opacity:0.3});
+const edgeSelMat=new THREE.LineBasicMaterial({color:0x10151d});
+const slabEdgeMat=new THREE.LineBasicMaterial({color:0xaab3c0});
+const voidEdgeMat=new THREE.LineBasicMaterial({color:0xb4bcc8,transparent:true,opacity:0.8});
+const dropInk=new THREE.LineBasicMaterial({color:0x141922});
+const dropAlert=new THREE.LineBasicMaterial({color:0xc8234b});
+
+const B={}, D={};
+let drag=null, hoverId=null;
+let SW=800, SH=600;
+
+/* ---------- scene objects ---------- */
+function makeBuilding(def){
+  const g=new THREE.Group(); scene.add(g);
+  const R={def:def,g:g,fade:1,shells:[],slabs:[],slabMats:[],voids:[],voidT:[],voidV:[],plans:[],tag:null};
+  const W=def.w*S, Dp=def.d*S, n=def.levels.length;
+  R.shellMat=new THREE.MeshLambertMaterial({color:0xffffff});
+  R.padMat=new THREE.MeshLambertMaterial({color:0xf1f3f6});
+  R.shellEdge=new THREE.LineBasicMaterial({color:0xb7bfcb,transparent:true,opacity:0.9});
+  R.padEdge=new THREE.LineBasicMaterial({color:0xdde1e7,transparent:true,opacity:1});
+  const pad=new THREE.Mesh(boxGeo,R.padMat);
+  pad.scale.set(W+3,PAD,Dp+3); pad.position.set(def.x*S,PAD/2,def.z*S); pad.receiveShadow=true;
+  pad.add(new THREE.LineSegments(edgeGeo,R.padEdge)); g.add(pad);
+  for(let f=0;f<n;f++){
+    const sh=new THREE.Mesh(boxGeo,R.shellMat);
+    sh.castShadow=true; sh.receiveShadow=true; sh.userData={t:'shell',b:def.id};
+    sh.add(new THREE.LineSegments(edgeGeo,R.shellEdge)); g.add(sh); R.shells.push(sh);
+    const sm=new THREE.MeshLambertMaterial({color:0xffffff});
+    const sl=new THREE.Mesh(boxGeo,sm);
+    sl.scale.set(W,SLAB,Dp); sl.castShadow=true; sl.receiveShadow=true;
+    sl.add(new THREE.LineSegments(edgeGeo,slabEdgeMat)); g.add(sl); R.slabs.push(sl); R.slabMats.push(sm);
+    const vm=new THREE.Mesh(boxGeo,new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.28,depthWrite:false}));
+    vm.add(new THREE.LineSegments(edgeGeo,voidEdgeMat)); g.add(vm); R.voids.push(vm);
+  }
+  const tag=document.createElement('button');
+  tag.type='button'; tag.className='btag'; tag.dataset.b=def.id;
+  overlay.appendChild(tag); R.tag=tag;
+  return R;
+}
+function makeDept(id){
+  const dd=DEPTS[id];
+  const base=new THREE.Color(CATS[dd.c].color);
+  const mat=new THREE.MeshLambertMaterial({color:base.clone()});
+  const mesh=new THREE.Mesh(boxGeo,mat);
+  mesh.castShadow=true; mesh.receiveShadow=true; mesh.userData={t:'dept',id:id};
+  const ed=new THREE.LineSegments(edgeGeo,edgeMat); mesh.add(ed);
+  scene.add(mesh);
+  const lbl=document.createElement('div'); lbl.className='lbl'; overlay.appendChild(lbl);
+  const d={id:id,mesh:mesh,ed:ed,mat:mat,base:base,lbl:lbl,vx:0,vf:0,vw:1,tx:0,tf:0,tw:1,b:null,f:0,dim:1,lw:-1,lh:-1};
+  setLabelHTML(d);
+  return d;
+}
+function setLabelHTML(d){
+  const dd=DEPTS[d.id];
+  d.lbl.innerHTML='<b>'+esc(dd.n)+'</b><span>'+fmt(dd.a)+' SF</span>';
+  d.lh=-1;
+}
+BUILDINGS.forEach(def=>{B[def.id]=makeBuilding(def);});
+for(const k in DEPTS) D[k]=makeDept(k);
+
+const dropBox=new THREE.LineSegments(edgeGeo,dropInk); dropBox.visible=false; scene.add(dropBox);
+const slotBox=new THREE.LineSegments(edgeGeo,dropInk); slotBox.visible=false; scene.add(slotBox);
+
+/* ---------- layout ---------- */
+function planFloor(def,ids){
+  const plate=def.w*def.d;
+  let total=0; ids.forEach(i=>{total+=DEPTS[i].a;});
+  const den=Math.max(plate,total);
+  let x=-def.w/2; const items=[];
+  ids.forEach(id=>{ const w=def.w*DEPTS[id].a/den; items.push({id:id,cx:x+w/2,w:w}); x+=w; });
+  return {items:items,total:total,plate:plate,used:x+def.w/2};
+}
+function floorStat(bid,f){
+  const def=BDEF[bid], ids=state.levels[bid][f];
+  let total=0; ids.forEach(i=>{total+=DEPTS[i].a;});
+  const plate=def.w*def.d;
+  return {ids:ids,total:total,plate:plate,over:total>plate+0.5};
+}
+function levelsWithOverride(bid){
+  const lv=state.levels[bid].map(a=>a.slice());
+  const o=drag?drag.ov:null;
+  if(o&&o.b===bid){
+    lv.forEach(a=>{const i=a.indexOf(o.id); if(i>=0)a.splice(i,1);});
+    lv[o.f].splice(o.idx,0,o.id);
+  }
+  return lv;
+}
+function relayout(snap){
+  for(const bid in B){
+    const R=B[bid], def=R.def, lv=levelsWithOverride(bid);
+    lv.forEach((ids,f)=>{
+      const p=planFloor(def,ids);
+      p.items.forEach(it=>{
+        const d=D[it.id]; d.b=bid; d.f=f; d.tf=f; d.tx=(def.x+it.cx)*S; d.tw=it.w*S;
+        if(snap||d.lw<0){d.vx=d.tx;d.vf=d.tf;d.vw=d.tw;d.lw=0;}
+      });
+      R.plans[f]=p;
+      const free=Math.max(0,def.w-p.used);
+      R.voidT[f]={cx:(def.x-def.w/2+p.used+free/2)*S,w:free*S};
+      if(!R.voidV[f]||snap) R.voidV[f]={cx:R.voidT[f].cx,w:R.voidT[f].w};
+    });
+  }
+}
+
+/* ---------- view ---------- */
+const view={az:-0.62,el:0.5,lf:Math.log(30),ls:Math.log(50),t:new THREE.Vector3(6.5,3,1.8)};
+const viewT={az:-0.62,el:0.5,fov:30,s:50,t:new THREE.Vector3(6.5,3,1.8)};
+let explode=0, explodeT=0, gridT=1, viewRate=10;
+function fit(rxz,h,el,asp,m){
+  const sH=(2*rxz*Math.sin(el)+h*Math.cos(el))*m;
+  const sW=2*rxz*m/asp;
+  return Math.max(sH,sW);
+}
+function targetView(){
+  const def=BDEF[state.sel], W=def.w*S, Dp=def.d*S, fhU=def.fh*S, n=state.levels[def.id].length;
+  const asp=SW/SH, cx=def.x*S, cz=def.z*S;
+  if(state.mode==='mass'){
+    if(state.focus==='campus'){
+      return {az:-0.62,el:0.5,fov:30,s:fit(34,14,0.5,asp,1.1),t:new THREE.Vector3(6.5,3,1.8)};
+    }
+    const H=n*fhU, rxz=Math.max(Math.hypot(W,Dp)/2*2.1,16);
+    return {az:-0.62,el:0.5,fov:30,s:fit(rxz,H,0.5,asp,1.1),t:new THREE.Vector3(cx,H/2,cz)};
+  }
+  const pitchE=fhU*(1+EXPLODE[state.mode]), H=(n-1)*pitchE+fhU;
+  if(state.mode==='axon'){
+    return {az:-0.7,el:0.52,fov:4,s:fit(Math.hypot(W,Dp)/2,H,0.52,asp,1.2),t:new THREE.Vector3(cx,BASE+H/2,cz)};
+  }
+  const s=Math.max(H*1.3,W*1.6/asp);
+  return {az:0,el:0,fov:3.2,s:s,t:new THREE.Vector3(cx-0.06*s*asp,BASE+H/2,cz)};
+}
+function retarget(keepAngles){
+  const v=targetView();
+  if(keepAngles&&state.mode==='mass'){ viewT.fov=v.fov; viewT.s=v.s; viewT.t.copy(v.t); }
+  else { viewT.az=v.az; viewT.el=v.el; viewT.fov=v.fov; viewT.s=v.s; viewT.t.copy(v.t); }
+  explodeT=EXPLODE[state.mode]; gridT=GRIDOP[state.mode];
+}
+function snapView(){
+  view.az=viewT.az; view.el=viewT.el; view.lf=Math.log(viewT.fov); view.ls=Math.log(viewT.s); view.t.copy(viewT.t);
+  explode=explodeT;
+}
+function updateCamera(){
+  const fov=Math.exp(view.lf), s=Math.exp(view.ls);
+  const dist=s/(2*Math.tan(THREE.MathUtils.degToRad(fov)/2));
+  const ce=Math.cos(view.el);
+  camera.position.set(view.t.x+dist*Math.sin(view.az)*ce,view.t.y+dist*Math.sin(view.el),view.t.z+dist*Math.cos(view.az)*ce);
+  camera.fov=fov; camera.aspect=SW/SH;
+  camera.near=Math.max(0.5,dist-130); camera.far=dist+170;
+  camera.updateProjectionMatrix();
+  camera.lookAt(view.t);
+  camera.updateMatrixWorld();
+  scene.fog.near=dist+22; scene.fog.far=dist+120;
+}
+function resize(){
+  SW=Math.max(1,stage.clientWidth); SH=Math.max(1,stage.clientHeight);
+  renderer.setSize(SW,SH,false);
+}
+
+/* ---------- per-frame scene update ---------- */
+function updateScene(k){
+  const selId=state.sel, mode=state.mode;
+  grid.material.opacity+=(gridT-grid.material.opacity)*k;
+  grid.visible=grid.material.opacity>0.02;
+  for(const bid in B){
+    const R=B[bid], def=R.def, sel=bid===selId;
+    const W=def.w*S, Dp=def.d*S, fhU=def.fh*S, pitch=fhU*(1+explode), n=def.levels.length;
+    const tf=sel?1:(mode==='mass'?1:0);
+    R.fade+=(tf-R.fade)*k; if(Math.abs(tf-R.fade)<0.01)R.fade=tf;
+    R.g.visible=sel||R.fade>0.01;
+    if(!R.g.visible) continue;
+    const op=sel?1:R.fade, tr=op<0.99;
+    [R.shellMat,R.padMat].forEach(m=>{ if(m.transparent!==tr){m.transparent=tr;m.needsUpdate=true;} m.opacity=op; m.depthWrite=!tr; });
+    R.shellEdge.opacity=0.9*op; R.padEdge.opacity=op;
+    for(let f=0;f<n;f++){
+      const y0=BASE+f*pitch;
+      const sh=R.shells[f]; sh.visible=!sel;
+      sh.position.set(def.x*S,y0+(fhU-0.05)/2,def.z*S); sh.scale.set(W,fhU-0.05,Dp);
+      const sl=R.slabs[f]; sl.visible=sel;
+      sl.position.set(def.x*S,y0+SLAB/2,def.z*S);
+      const vm=R.voids[f];
+      if(sel){
+        const st=R.plans[f], over=st.total>st.plate+0.5;
+        R.slabMats[f].color.setHex(over?0xf3c9d3:0xffffff);
+        const v=R.voidV[f], t=R.voidT[f];
+        v.cx+=(t.cx-v.cx)*k; v.w+=(t.w-v.w)*k;
+        const h=fhU-SLAB-CLEAR, vis=v.w>0.12;
+        vm.visible=vis;
+        if(vis){ vm.position.set(v.cx,y0+SLAB+h/2,def.z*S); vm.scale.set(Math.max(0.01,v.w-GAP),h,Dp); }
+      } else vm.visible=false;
+    }
+  }
+  for(const id in D){
+    const d=D[id], sel=d.b===selId;
+    d.mesh.visible=sel;
+    if(!sel) continue;
+    const def=BDEF[d.b], fhU=def.fh*S, h=fhU-SLAB-CLEAR, pitch=fhU*(1+explode);
+    const isDrag=drag&&drag.id===id;
+    d.vw+=(d.tw-d.vw)*k;
+    if(!isDrag){ d.vx+=(d.tx-d.vx)*k; d.vf+=(d.tf-d.vf)*k; }
+    if(isDrag) d.mesh.position.copy(drag.pos);
+    else d.mesh.position.set(d.vx,BASE+d.vf*pitch+SLAB+h/2,def.z*S);
+    d.mesh.scale.set(Math.max(0.02,d.vw-GAP),h,def.d*S);
+    d.mesh.renderOrder=isDrag?5:0;
+    const want=(!state.isolate||DEPTS[id].c===state.isolate)?1:0.1;
+    d.dim+=(want-d.dim)*k;
+    const tr=d.dim<0.99;
+    if(tr!==d.mat.transparent){d.mat.transparent=tr;d.mat.needsUpdate=true;}
+    d.mat.opacity=d.dim; d.mat.depthWrite=!tr;
+    d.ed.visible=d.dim>0.5;
+    const isSel=state.selDept===id;
+    const em=isSel?0.22:(hoverId===id||isDrag?0.12:0);
+    d.mat.emissive.copy(d.base).multiplyScalar(em);
+    const em2=isSel?edgeSelMat:edgeMat;
+    if(d.ed.material!==em2) d.ed.material=em2;
+  }
+  if(drag){
+    const o=drag.ov, def=BDEF[o.b], fhU=def.fh*S, h=fhU-SLAB-CLEAR, pitch=fhU*(1+explode);
+    const W=def.w*S, Dp=def.d*S, d=D[drag.id];
+    dropBox.visible=true; dropBox.material=drag.over?dropAlert:dropInk;
+    dropBox.position.set(def.x*S,BASE+o.f*pitch+fhU/2,def.z*S); dropBox.scale.set(W+0.3,fhU,Dp+0.3);
+    slotBox.visible=true; slotBox.material=drag.over?dropAlert:dropInk;
+    slotBox.position.set(d.tx,BASE+o.f*pitch+SLAB+h/2,def.z*S); slotBox.scale.set(Math.max(0.02,d.tw-GAP),h,Dp);
+  } else { dropBox.visible=false; slotBox.visible=false; }
+}
+
+/* ---------- overlay labels ---------- */
+const tmpV=new THREE.Vector3();
+function toScreen(x,y,z){
+  tmpV.set(x,y,z).project(camera);
+  return {x:(tmpV.x*0.5+0.5)*SW,y:(-tmpV.y*0.5+0.5)*SH,ok:tmpV.z<1};
+}
+function screenBox(mesh){
+  const m=mesh.matrixWorld;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(let i=0;i<8;i++){
+    tmpV.set((i&1)?0.5:-0.5,(i&2)?0.5:-0.5,(i&4)?0.5:-0.5).applyMatrix4(m).project(camera);
+    const px=(tmpV.x*0.5+0.5)*SW, py=(-tmpV.y*0.5+0.5)*SH;
+    if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py;
+  }
+  return {x0:x0,y0:y0,x1:x1,y1:y1};
+}
+let floorTags=[];
+function rebuildFloorTags(){
+  floorTags.forEach(t=>t.remove()); floorTags=[];
+  const n=state.levels[state.sel].length;
+  for(let f=0;f<n;f++){ const el=document.createElement('div'); el.className='ftag'; overlay.appendChild(el); floorTags.push(el); }
+  updateFloorTagText();
+}
+function updateFloorTagText(){
+  floorTags.forEach((el,f)=>{
+    const s=floorStat(state.sel,f);
+    el.innerHTML='<b>L'+(f+1)+'</b>'+fk(s.total)+' / '+fk(s.plate);
+    el.classList.toggle('over',s.over);
+  });
+}
+function updateOverlay(){
+  scene.updateMatrixWorld(true);
+  const mode=state.mode;
+  for(const bid in B){
+    const R=B[bid], def=R.def, tag=R.tag;
+    if(mode!=='mass'||R.fade<0.5){ tag.style.display='none'; continue; }
+    const n=state.levels[bid].length, fhU=def.fh*S, pitch=fhU*(1+explode);
+    const p=toScreen(def.x*S,BASE+(n-1)*pitch+fhU+0.9,def.z*S);
+    if(!p.ok){ tag.style.display='none'; continue; }
+    tag.style.display='block';
+    tag.style.transform='translate('+p.x.toFixed(1)+'px,'+p.y.toFixed(1)+'px) translate(-50%,-100%)';
+  }
+  const def=BDEF[state.sel], fhU=def.fh*S, pitch=fhU*(1+explode), W=def.w*S, Dp=def.d*S;
+  floorTags.forEach((el,f)=>{
+    if(mode==='mass'){ el.style.display='none'; return; }
+    const p=toScreen(def.x*S-W/2,BASE+f*pitch+SLAB,def.z*S+Dp/2);
+    if(!p.ok){ el.style.display='none'; return; }
+    el.style.display='block';
+    el.style.transform='translate('+(p.x-10).toFixed(1)+'px,'+p.y.toFixed(1)+'px) translate(-100%,-50%)';
+  });
+  for(const id in D){
+    const d=D[id], lbl=d.lbl;
+    if(d.b!==state.sel||!state.labels||d.dim<0.5){ lbl.style.display='none'; continue; }
+    const bb=screenBox(d.mesh), bw=bb.x1-bb.x0, bh=bb.y1-bb.y0;
+    if(bw<64||bh<22||bb.x1<0||bb.x0>SW||bb.y1<0||bb.y0>SH){ lbl.style.display='none'; continue; }
+    lbl.style.display='block';
+    const w=Math.min(bw-8,170);
+    lbl.style.width=w.toFixed(0)+'px';
+    lbl.style.transform='translate('+((bb.x0+bb.x1)/2).toFixed(1)+'px,'+((bb.y0+bb.y1)/2).toFixed(1)+'px) translate(-50%,-50%)';
+    const one=bh<36;
+    if(d.lh!==(one?1:0)){ d.lh=one?1:0; lbl.lastChild.style.display=one?'none':'block'; }
+  }
+}
+
+/* ---------- loop ---------- */
+let lastT=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
+  const k=RM?1:1-Math.exp(-dt*10);
+  const kv=RM?1:1-Math.exp(-dt*viewRate);
+  view.az+=(viewT.az-view.az)*kv; view.el+=(viewT.el-view.el)*kv;
+  view.lf+=(Math.log(viewT.fov)-view.lf)*kv; view.ls+=(Math.log(viewT.s)-view.ls)*kv;
+  view.t.lerp(viewT.t,kv);
+  explode+=(explodeT-explode)*kv;
+  viewRate+=(10-viewRate)*Math.min(1,dt*0.8);
+  updateCamera();
+  updateScene(k);
+  updateOverlay();
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- panels ---------- */
+const leftEl=$('#left'), rightEl=$('#right');
+function levelOf(bid,id){
+  const lv=state.levels[bid];
+  for(let f=0;f<lv.length;f++){ const i=lv[f].indexOf(id); if(i>=0)return {f:f,i:i}; }
+  return null;
+}
+function renderLeft(){
+  let h='<section class="blk"><h2 class="h">Buildings</h2><div class="blist">';
+  BUILDINGS.forEach(def=>{
+    const lv=state.levels[def.id], plate=def.w*def.d, gsf=plate*lv.length;
+    let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
+    const pct=Math.min(100,Math.round(prog/gsf*100));
+    h+='<button type="button" class="bcard'+(def.id===state.sel?' on':'')+'" data-b="'+def.id+'"><span class="bn">'+esc(def.name)+'</span>'+
+       '<span class="bm">'+lv.length+' levels · '+fmt(gsf)+' GSF</span><span class="meter"><i style="width:'+pct+'%"></i></span></button>';
+  });
+  h+='</div><button type="button" class="link" data-act="campus">Show full campus</button></section>';
+  h+='<section class="blk"><h2 class="h">Program by category</h2><div class="lgl">';
+  for(const k in CATS){
+    let a=0; state.levels[state.sel].forEach(lv=>lv.forEach(id=>{ if(DEPTS[id].c===k)a+=DEPTS[id].a; }));
+    h+='<button type="button" class="lg'+(state.isolate===k?' on':'')+(a?'':' zero')+'" data-cat="'+k+'"><i style="background:'+CATS[k].color+'"></i><span>'+esc(CATS[k].name)+'</span><em>'+(a?fk(a):'–')+'</em></button>';
+  }
+  h+='</div></section>';
+  leftEl.innerHTML=h;
+}
+function renderRight(){
+  const bid=state.sel, def=BDEF[bid], lv=state.levels[bid], n=lv.length, plate=def.w*def.d;
+  let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
+  const gsf=plate*n, pct=Math.round(prog/gsf*100);
+  let h='<section class="blk"><p class="eyebrow">Selected building</p><h2 class="title">'+esc(def.name)+'</h2>'+
+    '<dl class="kv"><div><dt>Levels</dt><dd>'+n+'</dd></div><div><dt>Floor plate</dt><dd>'+fmt(plate)+' SF</dd></div>'+
+    '<div><dt>Gross area</dt><dd>'+fmt(gsf)+' SF</dd></div><div><dt>Program</dt><dd>'+fmt(prog)+' SF · '+pct+'%</dd></div></dl></section>';
+  const sd=state.selDept, loc=sd?levelOf(bid,sd):null;
+  if(sd&&loc){
+    const dd=DEPTS[sd], cat=CATS[dd.c];
+    let opts=''; for(let f=n-1;f>=0;f--) opts+='<option value="'+f+'"'+(f===loc.f?' selected':'')+'>Level '+(f+1)+'</option>';
+    h+='<section class="dcard"><div class="dhead"><i style="background:'+cat.color+'"></i><div><h3>'+esc(dd.n)+'</h3><p>'+esc(cat.name)+' · Level '+(loc.f+1)+'</p></div>'+
+       '<button type="button" class="x" data-act="desel" aria-label="Clear selection">×</button></div>'+
+       '<label for="area">Area (SF)</label><div class="step"><button type="button" data-act="dec" aria-label="Decrease area">−</button>'+
+       '<input id="area" type="number" step="500" min="500" max="80000" value="'+dd.a+'"><button type="button" data-act="inc" aria-label="Increase area">+</button></div>'+
+       '<label for="lvl">Level</label><select id="lvl">'+opts+'</select>'+
+       '<p class="note">'+Math.round(dd.a/plate*100)+'% of a '+fmt(plate)+' SF floor plate</p></section>';
+  } else {
+    h+='<p class="note">Select a department in the model or the list below to edit its area or level. Drag it to move it.</p>';
+  }
+  h+='<section class="blk"><h2 class="h">Levels</h2><div class="lvls">';
+  for(let f=n-1;f>=0;f--){
+    const st=floorStat(bid,f), den=Math.max(st.plate,st.total);
+    let bar='', chips='';
+    st.ids.forEach(id=>{
+      const dd=DEPTS[id], c=CATS[dd.c].color, on=sd===id;
+      bar+='<button type="button" class="bseg'+(on?' on':'')+'" data-dept="'+id+'" style="width:'+(dd.a/den*100).toFixed(2)+'%;background:'+c+'" title="'+esc(dd.n)+'" aria-label="'+esc(dd.n)+'"></button>';
+      chips+='<button type="button" class="chip'+(on?' on':'')+'" data-dept="'+id+'"><i style="background:'+c+'"></i>'+esc(dd.n)+'<em>'+fk(dd.a)+'</em></button>';
+    });
+    h+='<div class="lvl'+(st.over?' over':'')+'"><div class="lh"><b>Level '+(f+1)+'</b><span>'+fmt(st.total)+' / '+fmt(st.plate)+' SF'+(st.over?' · over':'')+'</span></div>'+
+       '<div class="bar">'+bar+'</div><div class="chips">'+chips+'</div></div>';
+  }
+  h+='</div></section>';
+  rightEl.innerHTML=h;
+}
+function refreshUI(){ renderLeft(); renderRight(); updateFloorTagText(); updateTags(); }
+function updateTags(){
+  for(const bid in B){
+    const def=BDEF[bid], lv=state.levels[bid], gsf=def.w*def.d*lv.length, tag=B[bid].tag;
+    tag.innerHTML=esc(def.name)+'<small>'+lv.length+' levels · '+fk(gsf)+' GSF</small>';
+    tag.classList.toggle('on',bid===state.sel);
+  }
+}
+
+/* ---------- state changes ---------- */
+function selectBuilding(bid,focus){
+  if(!B[bid])return;
+  const changed=state.sel!==bid;
+  state.sel=bid;
+  if(focus&&state.mode==='mass') state.focus='building';
+  if(changed){
+    state.selDept=null; B[bid].fade=1;
+    relayout(true);
+    rebuildFloorTags();
+  }
+  refreshUI(); retarget(false); viewRate=3.2;
+}
+function selectDept(id){
+  const loc=D[id]&&D[id].b;
+  if(loc&&loc!==state.sel){ selectBuilding(loc,false); }
+  state.selDept=id; renderRight();
+}
+function setMode(m){
+  const prev=state.mode;
+  state.mode=m;
+  state.focus=(m==='mass')?'campus':'building';
+  document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===m)));
+  hintEl.textContent=HINTS[m];
+  retarget(false); viewRate=3.2;
+  if(prev!==m) updateFloorTagText();
+}
+function setArea(id,v){
+  if(!id||!isFinite(v))return;
+  DEPTS[id].a=clamp(Math.round(v),500,80000);
+  setLabelHTML(D[id]); relayout(false); refreshUI();
+}
+function moveDeptToLevel(id,f){
+  const loc=levelOf(state.sel,id); if(!loc||loc.f===f)return;
+  const lv=state.levels[state.sel];
+  lv[loc.f].splice(loc.i,1); lv[f].push(id);
+  relayout(false); refreshUI();
+}
+function resetLayout(){
+  JSON.parse(INIT_LEVELS).forEach((lv,i)=>{state.levels[BUILDINGS[i].id]=lv;});
+  for(const k in INIT_AREAS){ DEPTS[k].a=INIT_AREAS[k]; setLabelHTML(D[k]); }
+  state.selDept=null; state.isolate=null;
+  relayout(false); refreshUI();
+}
+leftEl.addEventListener('click',e=>{
+  const bc=e.target.closest('[data-b]'); if(bc){ selectBuilding(bc.dataset.b,true); return; }
+  const cat=e.target.closest('[data-cat]'); if(cat){ state.isolate=(state.isolate===cat.dataset.cat)?null:cat.dataset.cat; renderLeft(); return; }
+  if(e.target.closest('[data-act="campus"]')){ state.focus='campus'; if(state.mode!=='mass'){ setMode('mass'); } else { retarget(false); viewRate=3.2; } }
+});
+rightEl.addEventListener('click',e=>{
+  const dp=e.target.closest('[data-dept]'); if(dp){ selectDept(dp.dataset.dept); return; }
+  const act=e.target.closest('[data-act]'); if(!act)return;
+  const a=act.dataset.act, id=state.selDept;
+  if(a==='desel'){ state.selDept=null; renderRight(); }
+  else if(a==='inc'&&id) setArea(id,DEPTS[id].a+500);
+  else if(a==='dec'&&id) setArea(id,DEPTS[id].a-500);
+});
+rightEl.addEventListener('change',e=>{
+  if(e.target.id==='area') setArea(state.selDept,parseFloat(e.target.value));
+  else if(e.target.id==='lvl') moveDeptToLevel(state.selDept,parseInt(e.target.value,10));
+});
+overlay.addEventListener('click',e=>{
+  const t=e.target.closest('.btag'); if(t) selectBuilding(t.dataset.b,true);
+});
+$('#modes').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-mode]'); if(b) setMode(b.dataset.mode);
+});
+$('#tools').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]'); if(!b)return;
+  const a=b.dataset.act;
+  if(a==='labels'){ state.labels=!state.labels; b.setAttribute('aria-pressed',String(state.labels)); }
+  else if(a==='resetview'){ retarget(false); viewRate=3.2; }
+  else if(a==='resetlayout') resetLayout();
+  else if(a==='present'){
+    const on=!$('#app').classList.contains('present');
+    $('#app').classList.toggle('present',on); b.setAttribute('aria-pressed',String(on));
+  }
+});
+
+/* ---------- pointer interaction ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+const pts=new Map();
+let gesture=null;
+function setNdc(cx,cy){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1);
+}
+function pick(cx,cy){
+  setNdc(cx,cy); ray.setFromCamera(ndc,camera);
+  const list=[];
+  for(const id in D){ const d=D[id]; if(d.b===state.sel&&d.dim>0.5) list.push(d.mesh); }
+  if(state.mode==='mass'){ for(const bid in B){ if(bid!==state.sel&&B[bid].fade>0.5) B[bid].shells.forEach(s=>list.push(s)); } }
+  const hits=ray.intersectObjects(list,false);
+  if(!hits.length) return null;
+  const u=hits[0].object.userData;
+  return u.t==='dept'?{type:'dept',id:u.id}:{type:'shell',id:u.b};
+}
+function updateStatus(){
+  if(!drag){ statusEl.hidden=true; return; }
+  const o=drag.ov, def=BDEF[o.b], ids=levelsWithOverride(o.b)[o.f];
+  let tot=0; ids.forEach(i=>{tot+=DEPTS[i].a;});
+  const plate=def.w*def.d; drag.over=tot>plate+0.5;
+  statusEl.className='status'+(drag.over?' over':'');
+  statusEl.textContent=DEPTS[o.id].n+' → Level '+(o.f+1)+' · '+fmt(tot)+' / '+fmt(plate)+' SF'+(drag.over?' · over by '+fmt(tot-plate):'');
+  statusEl.hidden=false;
+}
+function startDrag(g){
+  const d=D[g.id], c=d.mesh.position.clone();
+  const n=new THREE.Vector3(camera.position.x-c.x,0,camera.position.z-c.z);
+  if(n.lengthSq()<1e-6) n.set(0,0,1);
+  n.normalize();
+  const plane=new THREE.Plane().setFromNormalAndCoplanarPoint(n,c);
+  setNdc(g.sx,g.sy); ray.setFromCamera(ndc,camera);
+  const p0=new THREE.Vector3();
+  if(!ray.ray.intersectPlane(plane,p0)) p0.copy(c);
+  const loc=levelOf(d.b,g.id);
+  drag={id:g.id,plane:plane,off:c.clone().sub(p0),pos:c.clone(),ov:{b:d.b,id:g.id,f:loc.f,idx:loc.i},over:false};
+  canvas.style.cursor='grabbing';
+  relayout(false); updateStatus();
+}
+function moveDrag(cx,cy){
+  setNdc(cx,cy); ray.setFromCamera(ndc,camera);
+  const p=new THREE.Vector3();
+  if(!ray.ray.intersectPlane(drag.plane,p)) return;
+  drag.pos.copy(p).add(drag.off);
+  const o=drag.ov, def=BDEF[o.b], fhU=def.fh*S, h=fhU-SLAB-CLEAR, pitch=fhU*(1+explode);
+  const n=state.levels[o.b].length;
+  const f=clamp(Math.round((drag.pos.y-BASE-SLAB-h/2)/pitch),0,n-1);
+  const others=state.levels[o.b][f].filter(i=>i!==drag.id);
+  const plan=planFloor(def,others);
+  let idx=0; plan.items.forEach(it=>{ if((def.x+it.cx)*S<drag.pos.x) idx++; });
+  if(f!==o.f||idx!==o.idx){ drag.ov={b:o.b,id:o.id,f:f,idx:idx}; relayout(false); updateStatus(); }
+}
+function commitDrag(){
+  const o=drag.ov, d=D[o.id], def=BDEF[o.b], fhU=def.fh*S, h=fhU-SLAB-CLEAR, pitch=fhU*(1+explode);
+  d.vx=drag.pos.x; d.vf=(drag.pos.y-BASE-SLAB-h/2)/pitch;
+  const lv=state.levels[o.b];
+  lv.forEach(a=>{const i=a.indexOf(o.id); if(i>=0)a.splice(i,1);});
+  lv[o.f].splice(o.idx,0,o.id);
+  drag=null; canvas.style.cursor='';
+  relayout(false); updateStatus(); refreshUI();
+}
+function cancelDrag(){
+  if(!drag)return;
+  const d=D[drag.id]; d.vx=drag.pos.x;
+  drag=null; canvas.style.cursor=''; relayout(false); updateStatus();
+}
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button===1)return;
+  try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  viewRate=11;
+  if(pts.size>=2){
+    cancelDrag();
+    const a=Array.from(pts.values());
+    gesture={type:'pinch',d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1,s:viewT.s};
+    return;
+  }
+  const hit=(e.button===0)?pick(e.clientX,e.clientY):null;
+  if(hit&&hit.type==='dept'){ gesture={type:'dept',id:hit.id,sx:e.clientX,sy:e.clientY}; selectDept(hit.id); }
+  else if(hit&&hit.type==='shell'){ gesture={type:'shell',id:hit.id,sx:e.clientX,sy:e.clientY}; }
+  else gesture={type:(e.button===2||e.shiftKey||state.mode==='stack')?'pan':'orbit',lx:e.clientX,ly:e.clientY,moved:false};
+});
+canvas.addEventListener('pointermove',e=>{
+  if(pts.has(e.pointerId)) pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  let g=gesture;
+  if(!g){
+    if(e.pointerType==='touch')return;
+    const h=pick(e.clientX,e.clientY);
+    hoverId=(h&&h.type==='dept')?h.id:null;
+    canvas.style.cursor=h?(h.type==='dept'?'grab':'pointer'):'';
+    return;
+  }
+  if(g.type==='pinch'){
+    if(pts.size>=2){
+      const a=Array.from(pts.values());
+      const dd=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1;
+      viewT.s=clamp(g.s*g.d/dd,6,160);
+    }
+    return;
+  }
+  if(g.type==='dept'){
+    if(!drag&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)>5) startDrag(g);
+    if(drag) moveDrag(e.clientX,e.clientY);
+    return;
+  }
+  if(g.type==='shell'){
+    if(Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<=5) return;
+    g=gesture={type:'orbit',lx:g.sx,ly:g.sy,moved:true};
+  }
+  const dx=e.clientX-g.lx, dy=e.clientY-g.ly;
+  g.lx=e.clientX; g.ly=e.clientY;
+  if(Math.abs(dx)+Math.abs(dy)>0) g.moved=true;
+  if(g.type==='orbit'){
+    viewT.az-=dx*0.0075; viewT.el=clamp(viewT.el+dy*0.0075,0.06,1.45);
+  } else {
+    const upp=Math.exp(view.ls)/SH;
+    const right=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0);
+    const up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
+    viewT.t.addScaledVector(right,-dx*upp).addScaledVector(up,dy*upp);
+  }
+});
+function endPointer(e){
+  pts.delete(e.pointerId);
+  const g=gesture;
+  if(g){
+    if(g.type==='pinch'){ if(pts.size<2) gesture=null; }
+    else if(pts.size===0){
+      if(g.type==='dept'){ if(drag) commitDrag(); }
+      else if(g.type==='shell'){ selectBuilding(g.id,true); }
+      else if(!g.moved&&state.selDept){ state.selDept=null; renderRight(); }
+      gesture=null;
+    }
+  }
+  try{canvas.releasePointerCapture(e.pointerId);}catch(_){}
+}
+canvas.addEventListener('pointerup',endPointer);
+canvas.addEventListener('pointercancel',e=>{ cancelDrag(); endPointer(e); });
+canvas.addEventListener('pointerleave',()=>{ if(!gesture){ hoverId=null; } });
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault(); viewRate=11;
+  viewT.s=clamp(viewT.s*Math.exp(e.deltaY*0.0012),6,160);
+},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&drag){ cancelDrag(); gesture=null; }
+});
+
+/* ---------- boot ---------- */
+resize();
+relayout(true);
+rebuildFloorTags();
+refreshUI();
+hintEl.textContent=HINTS.mass;
+retarget(false); snapView();
+if('ResizeObserver' in window){
+  let rt=0;
+  new ResizeObserver(()=>{ resize(); clearTimeout(rt); rt=setTimeout(()=>{ retarget(true); },60); }).observe(stage);
+} else window.addEventListener('resize',()=>{ resize(); retarget(true); });
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
