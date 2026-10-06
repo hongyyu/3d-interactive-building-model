@@ -1,4 +1,4 @@
-# Campus Massing Model
+# 3D Interactive Building Model
 
 Interactive massing diagram for presenting a medical campus program to clients. Single self-contained HTML file built on Three.js r128, loaded from cdnjs.
 
