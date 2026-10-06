@@ -39,7 +39,7 @@ So the public URL exposes no client data, and the tool is safe to share with any
 **Tasks**
 - [x] Create the GitHub repo and enable Pages
 - [x] Deploy with a GitHub Actions workflow on push to `main` (`.github/workflows/pages.yml`)
-- [ ] Move to a small build setup (Vite) as libraries are added, and add the build step to the deploy workflow
+- [x] Move to a small build setup (Vite), and add the build step to the deploy workflow (`src/` modules; Three.js pinned at r128 until Phase 3)
 - [x] Replace the sample program with a clearly fictional demo project
 - [ ] Add a "Load project" start screen: demo, or import files (deferred to feature 3, when import exists)
 
