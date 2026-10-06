@@ -1,4 +1,4 @@
-import {CATS,DEPTS,BUILDINGS} from '../data/demo.js';
+import {PROJECT,CATS,DEPTS,BUILDINGS,deptColor} from '../data/project.js';
 import {state,BDEF} from '../state.js';
 import {leftEl,rightEl} from '../dom.js';
 import {esc,fmt,fk} from '../util.js';
@@ -15,7 +15,8 @@ export function renderLeft(){
     h+='<button type="button" class="bcard'+(def.id===state.sel?' on':'')+'" data-b="'+def.id+'"><span class="bn">'+esc(def.name)+'</span>'+
        '<span class="bm">'+lv.length+' levels · '+fmt(gsf)+' GSF</span><span class="meter"><i style="width:'+pct+'%"></i></span></button>';
   });
-  h+='</div><button type="button" class="link" data-act="campus">Show full campus</button></section>';
+  h+='</div><button type="button" class="link" data-act="campus">Show full campus</button>'+
+     (PROJECT.demo?'':'<button type="button" class="link" data-act="demo">Load demo project</button>')+'</section>';
   h+='<section class="blk"><h2 class="h">Program by category</h2><div class="lgl">';
   for(const k in CATS){
     let a=0; state.levels[state.sel].forEach(lv=>lv.forEach(id=>{ if(DEPTS[id].c===k)a+=DEPTS[id].a; }));
@@ -31,33 +32,44 @@ export function renderRight(){
   let h='<section class="blk"><p class="eyebrow">Selected building</p><h2 class="title">'+esc(def.name)+'</h2>'+
     '<dl class="kv"><div><dt>Levels</dt><dd>'+n+'</dd></div><div><dt>Floor plate</dt><dd>'+fmt(plate)+' SF</dd></div>'+
     '<div><dt>Gross area</dt><dd>'+fmt(gsf)+' SF</dd></div><div><dt>Program</dt><dd>'+fmt(prog)+' SF · '+pct+'%</dd></div></dl></section>';
-  const sd=state.selDept, loc=sd?levelOf(bid,sd):null;
-  if(sd&&loc){
+  const sd=state.selDept, loc=sd?levelOf(bid,sd):null, tray=sd!=null&&state.unassigned.includes(sd);
+  if(sd&&(loc||tray)){
     const dd=DEPTS[sd], cat=CATS[dd.c];
-    let opts=''; for(let f=n-1;f>=0;f--) opts+='<option value="'+f+'"'+(f===loc.f?' selected':'')+'>Level '+(f+1)+'</option>';
-    h+='<section class="dcard"><div class="dhead"><i style="background:'+cat.color+'"></i><div><h3>'+esc(dd.n)+'</h3><p>'+esc(cat.name)+' · Level '+(loc.f+1)+'</p></div>'+
+    let opts=''; for(let f=n-1;f>=0;f--) opts+='<option value="'+f+'"'+(loc&&f===loc.f?' selected':'')+'>Level '+(f+1)+'</option>';
+    opts+='<option value="-1"'+(tray?' selected':'')+'>Unassigned</option>';
+    h+='<section class="dcard"><div class="dhead"><i style="background:'+deptColor(sd)+'"></i><div><h3>'+esc(dd.n)+'</h3><p>'+esc(cat.name)+' · '+(tray?'Unassigned':'Level '+(loc.f+1))+'</p></div>'+
        '<button type="button" class="x" data-act="desel" aria-label="Clear selection">×</button></div>'+
        '<label for="area">Area (SF)</label><div class="step"><button type="button" data-act="dec" aria-label="Decrease area">−</button>'+
-       '<input id="area" type="number" step="500" min="500" max="80000" value="'+dd.a+'"><button type="button" data-act="inc" aria-label="Increase area">+</button></div>'+
-       '<label for="lvl">Level</label><select id="lvl">'+opts+'</select>'+
+       '<input id="area" type="number" step="500" min="500" max="500000" value="'+dd.a+'"><button type="button" data-act="inc" aria-label="Increase area">+</button></div>'+
+       '<label for="lvl">'+(tray?'Place in '+esc(def.name):'Level')+'</label><select id="lvl">'+opts+'</select>'+
+       (dd.notes?'<p class="dnotes">'+esc(dd.notes)+'</p>':'')+
        '<p class="note">'+Math.round(dd.a/plate*100)+'% of a '+fmt(plate)+' SF floor plate</p></section>';
   } else {
     h+='<p class="note">Select a department in the model or the list below to edit its area or level. Drag it to move it.</p>';
+  }
+  if(state.unassigned.length){
+    h+='<section class="blk"><h2 class="h">Unassigned · '+state.unassigned.length+'</h2>'+
+       '<p class="note">Select a department, then pick a level to place it in '+esc(def.name)+'.</p>'+
+       '<div class="chips">'+state.unassigned.map(id=>chip(id,sd===id)).join('')+'</div></section>';
   }
   h+='<section class="blk"><h2 class="h">Levels</h2><div class="lvls">';
   for(let f=n-1;f>=0;f--){
     const st=floorStat(bid,f), den=Math.max(st.plate,st.total);
     let bar='', chips='';
     st.ids.forEach(id=>{
-      const dd=DEPTS[id], c=CATS[dd.c].color, on=sd===id;
+      const dd=DEPTS[id], c=deptColor(id), on=sd===id;
       bar+='<button type="button" class="bseg'+(on?' on':'')+'" data-dept="'+id+'" style="width:'+(dd.a/den*100).toFixed(2)+'%;background:'+c+'" title="'+esc(dd.n)+'" aria-label="'+esc(dd.n)+'"></button>';
-      chips+='<button type="button" class="chip'+(on?' on':'')+'" data-dept="'+id+'"><i style="background:'+c+'"></i>'+esc(dd.n)+'<em>'+fk(dd.a)+'</em></button>';
+      chips+=chip(id,on);
     });
     h+='<div class="lvl'+(st.over?' over':'')+'"><div class="lh"><b>Level '+(f+1)+'</b><span>'+fmt(st.total)+' / '+fmt(st.plate)+' SF'+(st.over?' · over':'')+'</span></div>'+
        '<div class="bar">'+bar+'</div><div class="chips">'+chips+'</div></div>';
   }
   h+='</div></section>';
   rightEl.innerHTML=h;
+}
+function chip(id,on){
+  const dd=DEPTS[id];
+  return '<button type="button" class="chip'+(on?' on':'')+'" data-dept="'+id+'"><i style="background:'+deptColor(id)+'"></i>'+esc(dd.n)+'<em>'+fk(dd.a)+'</em></button>';
 }
 export function refreshUI(){ renderLeft(); renderRight(); updateFloorTagText(); updateTags(); }
 function updateTags(){

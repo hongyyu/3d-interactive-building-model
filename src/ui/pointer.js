@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {DEPTS} from '../data/demo.js';
+import {DEPTS} from '../data/project.js';
 import {state,BDEF,drag,setDrag,setHoverId} from '../state.js';
 import {canvas,statusEl} from '../dom.js';
 import {clamp,fmt} from '../util.js';

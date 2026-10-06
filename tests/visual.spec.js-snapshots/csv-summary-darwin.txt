@@ -1,0 +1,23 @@
+IMPORT
+
+program-with-issues.csv
+DEPARTMENTS
+6
+TOTAL PROGRAM
+37,300 SF
+BUILDINGS
+4 (current)
+PLACED · UNASSIGNED
+3 · 3
+7 notes
+3 departments have no building or level and will wait in the Unassigned tray.
+Program row 4: new category "Sleep Medicine" created.
+Program row 5: building "Garage" not found; "Pharmacy" goes to Unassigned.
+Program row 6: "Café" has no SF greater than 0; row skipped.
+Program row 7: "Imaging" is listed twice; the first one is used.
+Program row 8: Hospital Tower has no Level 12; "Rooftop Garden" goes to Unassigned.
+Program row 9: "red" is not a hex colour; the category colour is used.
+
+The file has no Buildings sheet, so the current buildings are kept.
+
+Importing replaces the current project, including changes made in the app.

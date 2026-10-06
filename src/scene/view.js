@@ -4,6 +4,7 @@ import {stage} from '../dom.js';
 import {RM} from '../util.js';
 import {S,BASE,EXPLODE,GRIDOP} from './constants.js';
 import {renderer,scene,camera} from './scene.js';
+import {campusBounds} from '../layout/site.js';
 
 export const view={az:-0.62,el:0.5,lf:Math.log(30),ls:Math.log(50),t:new THREE.Vector3(6.5,3,1.8)};
 export const viewT={az:-0.62,el:0.5,fov:30,s:50,t:new THREE.Vector3(6.5,3,1.8)};
@@ -20,7 +21,10 @@ function targetView(){
   const asp=SW/SH, cx=def.x*S, cz=def.z*S;
   if(state.mode==='mass'){
     if(state.focus==='campus'){
-      return {az:-0.62,el:0.5,fov:30,s:fit(34,14,0.5,asp,1.1),t:new THREE.Vector3(6.5,3,1.8)};
+      // centre snapped to 1 ft, extent rounded up to 10 ft; aim at a fifth of the tallest height
+      const c=campusBounds();
+      return {az:-0.62,el:0.5,fov:30,s:fit(Math.ceil(c.r),Math.ceil(c.h),0.5,asp,1.1),
+        t:new THREE.Vector3(Math.round(c.cx*10)/10,Math.round(c.h*0.2),Math.round(c.cz*10)/10)};
     }
     const H=n*fhU, rxz=Math.max(Math.hypot(W,Dp)/2*2.1,16);
     return {az:-0.62,el:0.5,fov:30,s:fit(rxz,H,0.5,asp,1.1),t:new THREE.Vector3(cx,H/2,cz)};

@@ -1,4 +1,4 @@
-import {DEPTS} from '../data/demo.js';
+import {DEPTS} from '../data/project.js';
 import {state,BDEF,drag} from '../state.js';
 import {S} from '../scene/constants.js';
 import {B,D} from '../scene/scene.js';
@@ -27,6 +27,7 @@ export function levelsWithOverride(bid){
   return lv;
 }
 export function relayout(snap){
+  state.unassigned.forEach(id=>{D[id].b=null;});
   for(const bid in B){
     const R=B[bid], def=R.def, lv=levelsWithOverride(bid);
     lv.forEach((ids,f)=>{

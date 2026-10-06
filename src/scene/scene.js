@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import {CATS,DEPTS,BUILDINGS} from '../data/demo.js';
+import {DEPTS,BUILDINGS,deptColor} from '../data/project.js';
 import {canvas,overlay} from '../dom.js';
 import {fmt,esc} from '../util.js';
 import {S,SLAB,PAD} from './constants.js';
+import {campusBounds} from '../layout/site.js';
 
 /* renderer is null when WebGL is unavailable; main.js checks it before booting */
 export let renderer=null;
@@ -20,8 +21,9 @@ scene.fog=new THREE.Fog(0xffffff,100,300);
 export const camera=new THREE.PerspectiveCamera(30,1,0.5,1000);
 
 scene.add(new THREE.AmbientLight(0xffffff,0.68));
+const SUN_POS=new THREE.Vector3(-26,60,44), SUN_TARGET=new THREE.Vector3(6,0,2), SUN_HALF=60, GRID_HALF=120;
 const sun=new THREE.DirectionalLight(0xffffff,0.55);
-sun.position.set(-26,60,44); sun.target.position.set(6,0,2);
+sun.position.copy(SUN_POS); sun.target.position.copy(SUN_TARGET);
 sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-60; sun.shadow.camera.right=60; sun.shadow.camera.top=60; sun.shadow.camera.bottom=-60;
 sun.shadow.camera.near=1; sun.shadow.camera.far=200;
@@ -74,8 +76,7 @@ function makeBuilding(def){
   return R;
 }
 function makeDept(id){
-  const dd=DEPTS[id];
-  const base=new THREE.Color(CATS[dd.c].color);
+  const base=new THREE.Color(deptColor(id));
   const mat=new THREE.MeshLambertMaterial({color:base.clone()});
   const mesh=new THREE.Mesh(boxGeo,mat);
   mesh.castShadow=true; mesh.receiveShadow=true; mesh.userData={t:'dept',id:id};
@@ -94,6 +95,35 @@ export function setLabelHTML(d){
 export function buildScene(){
   BUILDINGS.forEach(def=>{B[def.id]=makeBuilding(def);});
   for(const k in DEPTS) D[k]=makeDept(k);
-  dropBox=new THREE.LineSegments(edgeGeo,dropInk); dropBox.visible=false; scene.add(dropBox);
-  slotBox=new THREE.LineSegments(edgeGeo,dropInk); slotBox.visible=false; scene.add(slotBox);
+  if(!dropBox){
+    dropBox=new THREE.LineSegments(edgeGeo,dropInk); dropBox.visible=false; scene.add(dropBox);
+    slotBox=new THREE.LineSegments(edgeGeo,dropInk); slotBox.visible=false; scene.add(slotBox);
+  }
+}
+/* removes the current project's meshes, materials and overlay elements; shared geometry stays */
+export function clearScene(){
+  for(const bid in B){
+    const R=B[bid];
+    scene.remove(R.g); R.tag.remove();
+    [R.shellMat,R.padMat,R.shellEdge,R.padEdge,...R.slabMats,...R.voids.map(v=>v.material)].forEach(m=>m.dispose());
+    delete B[bid];
+  }
+  for(const id in D){
+    const d=D[id];
+    scene.remove(d.mesh); d.mat.dispose(); d.lbl.remove();
+    delete D[id];
+  }
+}
+/* The default sun and grid cover a site about 1200 ft across around the origin. A campus that
+   extends past them gets a recentred, enlarged shadow box and grid. */
+export function fitSite(){
+  const c=campusBounds();
+  let tx=SUN_TARGET.x, tz=SUN_TARGET.z, half=SUN_HALF, gx=0, gz=0, gs=1;
+  if(Math.hypot(c.cx-tx,c.cz-tz)+c.r>SUN_HALF){ tx=c.cx; tz=c.cz; half=Math.ceil(c.r*1.15); }
+  if(Math.max(Math.abs(c.cx),Math.abs(c.cz))+c.r>GRID_HALF){ gx=Math.round(c.cx/5)*5; gz=Math.round(c.cz/5)*5; gs=Math.ceil((c.r+20)/GRID_HALF); }
+  sun.target.position.set(tx,0,tz);
+  sun.position.set(tx+SUN_POS.x-SUN_TARGET.x,SUN_POS.y,tz+SUN_POS.z-SUN_TARGET.z);
+  const sc=sun.shadow.camera;
+  sc.left=-half; sc.right=half; sc.top=half; sc.bottom=-half; sc.updateProjectionMatrix();
+  grid.position.set(gx,0.002,gz); grid.scale.setScalar(gs);
 }

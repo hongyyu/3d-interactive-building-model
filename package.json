@@ -8,16 +8,24 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test:visual:update": "playwright test --update-snapshots",
+    "template": "node scripts/build-template.mjs",
+    "predev": "npm run template",
+    "prebuild": "npm run template"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
   "dependencies": {
-    "three": "0.128.0"
+    "three": "0.128.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "exceljs": "4.4.0",
     "vite": "^8.3.3"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

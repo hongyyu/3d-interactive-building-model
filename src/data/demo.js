@@ -1,7 +1,6 @@
-/* Fictional demo program. Edit this file to load a different program,
-   but keep real client data out of this public repo. */
-export const PROJECT={title:'3D Interactive Building Model',sub:'Fictional demo campus · placeholder figures'};
-export const CATS={
+/* Fictional demo project, loaded at startup and used to build the Excel template.
+   Keep real client data out of this public repo; users import their own files instead. */
+const CATS={
   crit:{name:'Emergency & Critical Care',color:'#e0554e'},
   inpt:{name:'Inpatient Units',color:'#5fb27f'},
   proc:{name:'Procedural & Surgical',color:'#26a5a0'},
@@ -11,7 +10,7 @@ export const CATS={
   pub:{name:'Public & Admin',color:'#a478d4'}
 };
 /* n = name, c = category, a = area in departmental SF */
-export const DEPTS={
+const DEPTS={
   ed:{n:'Emergency Department',c:'crit',a:14000},
   lobby:{n:'Main Lobby & Public',c:'pub',a:6000},
   pharm:{n:'Pharmacy',c:'supp',a:3000},
@@ -50,7 +49,7 @@ export const DEPTS={
   elec:{n:'Electrical & Generators',c:'supp',a:8000}
 };
 /* w x d = floor plate in ft, fh = floor-to-floor ft, x/z = plan position in ft, levels = department ids per level (Level 1 first) */
-export const BUILDINGS=[
+const BUILDINGS=[
   {id:'tower',name:'Hospital Tower',w:200,d:120,fh:17,x:-50,z:-40,
    levels:[['ed','lobby','pharm'],['surg','pacu','spd'],['img','cath','lab'],['icu','step'],['wn'],['msa'],['msb'],['bh','adm']]},
   {id:'dt',name:'Diagnostic & Treatment',w:300,d:160,fh:17,x:-50,z:140,
@@ -60,3 +59,9 @@ export const BUILDINGS=[
   {id:'cup',name:'Central Utility Plant',w:120,d:90,fh:20,x:240,z:-140,
    levels:[['plant','dock'],['elec']]}
 ];
+
+export const DEMO={
+  title:'3D Interactive Building Model',
+  sub:'Fictional demo campus · placeholder figures',
+  demo:true, cats:CATS, depts:DEPTS, buildings:BUILDINGS, unassigned:[]
+};
