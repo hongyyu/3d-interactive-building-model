@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Interactive massing and stacking diagram for a medical campus program (v0.1 prototype). The whole app is one self-contained `index.html`: inline CSS, plus one inline script that uses Three.js **r128** as a global (`THREE`) loaded from cdnjs. There is no package.json and no build, lint or test tooling.
 
 - **Run:** open `index.html` in a browser (`open index.html`). Reload to see changes.
-- **Deploy:** GitHub Pages, deployed from the branch root, so `index.html` must stay at the repo root.
+- **Deploy:** every push to `main` runs `.github/workflows/pages.yml`, which copies `index.html` into `_site/` and deploys it to GitHub Pages (https://hongyyu.github.io/3d-interactive-building-model/). If the app gains extra files (scripts, CSS, templates), add them to the workflow's "Stage site" step or they won't be published.
 - **Roadmap:** `FEATURE_PLAN.md` describes the planned phases: CSV/XLSX program import, layout options and compare, JPEG/CSV export, Rhino `.3dm` import and vertical circulation. It also proposes a later move to Vite with a `src/{data,layout,scene,ui}` split and an upgrade to current Three.js. Until that migration happens, keep everything in the single file and stick to the r128 API: no ES module imports, and no `three/examples` addons such as OrbitControls.
-- **Data privacy constraint (from the plan):** the hosted site must contain only the tool and fictional sample data. User files are parsed in the browser and never uploaded. There is no backend.
+- **Data privacy constraint:** the repo and the Pages site are public. The `DATA` block must hold only the fictional demo program, so never commit real client data. User files are parsed in the browser and never uploaded. There is no backend.
 
 ## Architecture of `index.html`
 
