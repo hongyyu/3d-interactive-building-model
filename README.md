@@ -21,6 +21,13 @@ npm run build     # production build into dist/
 npm run preview   # serve dist/ locally
 ```
 
+## Visual regression test
+`npm run test:visual` builds the app and replays a fixed 32-step scenario in headless Chromium. It covers the view modes, selection, area edits, dragging, camera moves, reset, present mode and a narrow window. At each step it compares a screenshot of the 3D stage and a text snapshot of the panels against the baselines in `tests/visual.spec.js-snapshots/`.
+
+- First time only: `npx playwright install chromium`
+- After an intended visual change: review the failures with `npx playwright show-report`, then re-record the baselines with `npm run test:visual:update` and commit them.
+- The baselines were rendered on macOS. Other platforms need their own.
+
 ## Use your own program
 This repo and its site are public. The bundled program is a fictional demo, so do not commit real client data here.
 
