@@ -5,6 +5,7 @@ import {esc,fmt,fk} from '../util.js';
 import {B} from '../scene/scene.js';
 import {updateFloorTagText} from '../scene/overlay.js';
 import {floorStat,levelOf} from '../layout/plan.js';
+import {MAX_LEVELS} from '../scene/constants.js';
 
 export function renderLeft(){
   let h='<section class="blk"><h2 class="h">Buildings</h2><div class="blist">';
@@ -52,7 +53,11 @@ export function renderRight(){
        '<p class="note">Select a department, then pick a level to place it in '+esc(def.name)+'.</p>'+
        '<div class="chips">'+state.unassigned.map(id=>chip(id,sd===id)).join('')+'</div></section>';
   }
-  h+='<section class="blk"><h2 class="h">Levels</h2><div class="lvls">';
+  const topIds=lv[n-1];
+  h+='<section class="blk"><div class="lvhead"><h2 class="h">Levels</h2><span class="lvbtns">'+
+     '<button type="button" class="mini" data-act="rmlevel"'+(n>1?'':' disabled')+' title="Remove Level '+n+(topIds.length?'; its departments move to Unassigned':'')+'">− Remove top</button>'+
+     '<button type="button" class="mini" data-act="addlevel"'+(n<MAX_LEVELS?'':' disabled')+' title="Add an empty Level '+(n+1)+' on top of '+esc(def.name)+'">+ Add level</button>'+
+     '</span></div><div class="lvls">';
   for(let f=n-1;f>=0;f--){
     const st=floorStat(bid,f), den=Math.max(st.plate,st.total);
     let bar='', chips='';
@@ -62,7 +67,7 @@ export function renderRight(){
       chips+=chip(id,on);
     });
     h+='<div class="lvl'+(st.over?' over':'')+'"><div class="lh"><b>Level '+(f+1)+'</b><span>'+fmt(st.total)+' / '+fmt(st.plate)+' SF'+(st.over?' · over':'')+'</span></div>'+
-       '<div class="bar">'+bar+'</div><div class="chips">'+chips+'</div></div>';
+       '<div class="bar">'+bar+'</div>'+(chips?'<div class="chips">'+chips+'</div>':'<p class="note lvempty">Empty level</p>')+'</div>';
   }
   h+='</div></section>';
   rightEl.innerHTML=h;

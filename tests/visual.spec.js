@@ -86,13 +86,22 @@ const steps = [
   ['narrow-viewport', p => p.setViewportSize({width: 420, height: 900})],
 ];
 
-/* opens the app on the demo; returns the list that collects uncaught page errors */
-async function open(page) {
+/* loads the page, which opens on the start screen; returns the list that collects uncaught page errors */
+async function load(page) {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   // Block web fonts so the test runs offline and fallback fonts keep rendering stable.
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await page.goto('/');
+  await settle(page);
+  return errors;
+}
+
+/* opens the app on the demo, past the start screen */
+async function open(page) {
+  const errors = await load(page);
+  await page.click('#welcome [data-act=demo]');
+  await expect(page.locator('#welcome')).toBeHidden();
   await settle(page);
   return errors;
 }
@@ -188,4 +197,78 @@ test('a file without the required columns is rejected', async ({page}) => {
   await page.click('#importDlg button[value=cancel]');
   await expect(page.locator('#importDlg')).toBeHidden();
   await expect(page.locator('#psub')).toHaveText('Fictional demo campus · placeholder figures');
+});
+
+test('start screen, adding levels and the laser pointer', async ({page}) => {
+  const errors = await load(page);
+  // the start screen covers the app until the user picks a way in
+  await expect(page.locator('#welcome')).toBeVisible();
+  expect(await page.evaluate(() => document.querySelector('#app').inert)).toBe(true);
+  await expect.soft(page).toHaveScreenshot('welcome-page.png');
+
+  // importing from the start screen closes it once the user confirms
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#welcome [data-act=import]')]);
+  await chooser.setFiles(new URL('./fixtures/program-with-issues.csv', import.meta.url).pathname);
+  await page.click('#importOk');
+  await expect(page.locator('#welcome')).toBeHidden();
+  await expect(page.locator('#psub')).toHaveText('program-with-issues.csv · imported');
+
+  // the brand mark reopens it; "Explore the demo" asks before replacing the imported project
+  await page.click('#home');
+  await expect(page.locator('#welcomeBack')).toBeVisible();
+  page.once('dialog', d => d.accept());
+  await page.click('#welcome [data-act=demo]');
+  await expect(page.locator('#welcome')).toBeHidden();
+  await expect(page.locator('#psub')).toHaveText('Fictional demo campus · placeholder figures');
+
+  // add an empty level on top of the Hospital Tower
+  await page.click('#modes [data-mode=axon]');
+  const right = page.locator('#right'), tower = page.locator('#left [data-b=tower]');
+  await page.click('#right [data-act=addlevel]');
+  await expect(tower).toContainText('9 levels');
+  await expect(right.locator('.lvl').first()).toContainText('Level 9');
+  await expect(right.locator('.lvl').first()).toContainText('Empty level');
+  await settle(page);
+  await expect.soft(page.locator('#stage')).toHaveScreenshot('level-added.png');
+
+  // removing a level that holds departments sends them to the Unassigned tray
+  await page.click('#right [data-act=rmlevel]');
+  await page.click('#right [data-act=rmlevel]');
+  await expect(tower).toContainText('7 levels');
+  await expect(right.locator('.blk', {hasText: 'Unassigned · 2'}).locator('.chip')).toHaveText([/Behavioral Health/, /Administration/]);
+  await settle(page);
+  await expect.soft(page.locator('#stage')).toHaveScreenshot('level-removed.png');
+
+  // Reset layout restores the loaded level count, so the view matches the scenario's axon step
+  await page.click('#tools [data-act=resetlayout]');
+  await expect(tower).toContainText('8 levels');
+  await expect(right).not.toContainText('Unassigned');
+  await settle(page);
+  await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
+
+  // laser: Alt-drag draws a red stroke and leaves the model where it was
+  await page.click('#tools [data-act=laser]');
+  await expect(page.locator('#laser')).toBeVisible();
+  const b = await page.locator('#gl').boundingBox();
+  const x = b.x + 200, y = b.y + 200;
+  await page.keyboard.down('Alt');
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) await page.mouse.move(x + i * 20, y + i * 5);
+  await page.mouse.up();
+  await page.keyboard.up('Alt');
+  const px = await page.evaluate(([px, py]) => {
+    const c = document.querySelector('#laser'), s = c.width / innerWidth;
+    return [...c.getContext('2d').getImageData(Math.round(px * s), Math.round(py * s), 1, 1).data];
+  }, [x + 100, y + 25]);
+  expect(px[0]).toBeGreaterThan(150);
+  expect(px[3]).toBeGreaterThan(100);
+  // L toggles it off and clears the drawing
+  await page.keyboard.press('l');
+  await expect(page.locator('#laser')).toBeHidden();
+  await expect(page.locator('#tools [data-act=laser]')).toHaveAttribute('aria-pressed', 'false');
+  await page.mouse.move(b.x + b.width + 40, b.y + 40);
+  await settle(page);
+  await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
+  expect(errors).toEqual([]);
 });
