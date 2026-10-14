@@ -21,6 +21,9 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - **Visual test** (`tests/visual.spec.js`): builds the app and serves `dist/` on :4174.
   - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of `#stage`. Three steps also get full-page shots.
   - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file.
+  - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then draws with the laser. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
+
+  The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
 
   Screenshot tolerances: `threshold: 0.01` and `maxDiffPixels: 100` absorb SwiftShader antialiasing wobble. The config comment has the measurements. Web fonts are blocked so the run is offline and stable. Run it after any refactor that should not change behavior.
 
@@ -63,7 +66,18 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 
 **Template** (`scripts/build-template.mjs`): ExcelJS (a dev dependency) writes the template from `DEMO`, with dropdowns, number checks and an Instructions sheet. Its sheet and column names must stay in step with `COLS` in the importer.
 
-**State** (`state.js`): `state.levels[buildingId]` and `state.unassigned` (the tray) are the source of truth for stacking. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
+**Start screen** (`ui/welcome.js`): `#welcome` is visible in the markup and `#app` starts `inert`, so the app never flashes before boot.
+- The illustration is an isometric SVG generated from the demo's first building. It is animated purely in CSS: `.wf` drops each floor in, `.wx` explodes the stack, and both run on the same 10 s loop.
+- `showWelcome()` and `closeWelcome()` toggle it, and the brand mark `#home` reopens it. `main.js` skips rendering while it is open.
+- An import started from the start screen closes it when the import dialog closes with `returnValue === 'ok'`. `importDialog.js` clears `returnValue` on open, because Escape keeps the old value.
+- `#importFile` sits outside `#app`, so the file picker still opens while `#app` is inert.
+
+**Laser** (`ui/laser.js`): a full-window 2D canvas `#laser` with `pointer-events:none` draws the halo, the trail, click ripples and Alt-drag strokes.
+- Its pointer listeners run in the capture phase on `window`. An Alt-drag stops propagation, so the 3D gesture never starts.
+- The draw loop runs only while something is fading.
+- `L` toggles the laser. Escape turns it off, unless a department drag is in progress (then Escape cancels only the drag).
+
+**State** (`state.js`): `state.levels[buildingId]` and `state.unassigned` (the tray) are the source of truth for stacking. `state.levels[bid].length` is the live level count; `def.levels` is only the loaded definition, so don't read the count from it. `addLevel` and `removeTopLevel` (`ui/actions.js`) change the count; removing a level sends its departments to the tray. `setLevelCount(bid, n)` (`scene/scene.js`) creates or disposes that building's per-level shell, slab and void meshes to match. A new level starts with `R.lift[f] = 1` and drops into place. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
 
 **Shared mutable variables:** a value that is reassigned across modules is an exported `let`. Only its home module reassigns it, because ES module imports are read-only and assigning to one from another module throws.
 - `drag` and `hoverId` live in `state.js` and change through `setDrag` and `setHoverId`. `INIT_LEVELS` is reassigned only by `initState()`.

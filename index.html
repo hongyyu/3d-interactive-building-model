@@ -10,9 +10,14 @@
 <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-<div class="app" id="app">
+<div class="app" id="app" inert>
   <header class="top">
-    <div class="brand"><h1 id="ptitle">3D Interactive Building Model</h1><p id="psub"></p></div>
+    <div class="brandwrap">
+      <button type="button" class="home" id="home" title="Start screen" aria-label="Start screen">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="13" width="14" height="4" rx="1"/><rect x="3" y="8" width="14" height="4" rx="1"/><rect x="3" y="3" width="9" height="4" rx="1"/></svg>
+      </button>
+      <div class="brand"><h1 id="ptitle">3D Interactive Building Model</h1><p id="psub"></p></div>
+    </div>
     <div class="seg" role="group" aria-label="View mode" id="modes">
       <button type="button" data-mode="mass" aria-pressed="true">3D Massing</button>
       <button type="button" data-mode="axon" aria-pressed="false">Axon</button>
@@ -21,10 +26,10 @@
     <div class="tools" id="tools">
       <a class="btn" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">Download template</a>
       <button type="button" class="btn" data-act="import" title="Load a program from Excel (.xlsx) or CSV">Import program…</button>
-      <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
       <button type="button" class="btn" data-act="labels" aria-pressed="true">Labels</button>
       <button type="button" class="btn" data-act="resetview">Reset view</button>
       <button type="button" class="btn" data-act="resetlayout">Reset layout</button>
+      <button type="button" class="btn" data-act="laser" aria-pressed="false" title="Red laser pointer with a trail for presenting; Alt-drag draws a fading stroke (L)"><i class="laserdot" aria-hidden="true"></i>Laser</button>
       <button type="button" class="btn" data-act="present" aria-pressed="false">Present</button>
     </div>
   </header>
@@ -37,6 +42,32 @@
   </main>
   <aside class="side right" id="right"></aside>
 </div>
+<input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+<section class="welcome" id="welcome" aria-labelledby="wTitle">
+  <div class="wgrid">
+    <div class="wcopy">
+      <p class="eyebrow rise" style="--d:0">Medical campus · massing &amp; stacking study</p>
+      <h1 class="wtitle rise" id="wTitle" style="--d:1">3D Interactive Building Model</h1>
+      <p class="wlede rise" style="--d:2">Turn a department program into a 3D stacking diagram. Move departments between floors, keep floor plates within capacity, and present the result to your client.</p>
+      <ol class="wsteps">
+        <li class="rise" style="--d:3"><b>01</b><div><h2>Load a program</h2><p>Departments and areas from an Excel workbook or CSV, or the fictional demo campus.</p></div></li>
+        <li class="rise" style="--d:4"><b>02</b><div><h2>Stack it</h2><p>Drag departments between levels and add levels as the design grows. A floor that is over capacity turns red.</p></div></li>
+        <li class="rise" style="--d:5"><b>03</b><div><h2>Present it</h2><p>Switch between 3D Massing, Axon and Section Stack, and guide the room with the red laser pointer.</p></div></li>
+      </ol>
+      <div class="wcta rise" style="--d:6">
+        <button type="button" class="wbtn primary" data-act="demo"><span>Explore the demo</span><small id="wDemoMeta"></small></button>
+        <button type="button" class="wbtn" data-act="import"><span>Import Excel program</span><small>.xlsx or .csv file</small></button>
+      </div>
+      <p class="note wfine rise" style="--d:7">Files are read in your browser and never uploaded. Need the format? <a href="templates/program_template.xlsx" download>Download the Excel template</a>.</p>
+      <button type="button" class="link" data-act="back" id="welcomeBack" hidden>Back to the model</button>
+    </div>
+    <figure class="wart" aria-hidden="true">
+      <div class="wstack" id="wstack"></div>
+      <figcaption class="wcap"><span class="c1">Departments stack level by level</span><span class="c2">Axon view pulls the floors apart</span><span class="c3">Back together as one massing</span></figcaption>
+    </figure>
+  </div>
+</section>
+<canvas class="laser" id="laser" hidden aria-hidden="true"></canvas>
 <dialog class="dlg" id="importDlg" aria-labelledby="importTitle">
   <form method="dialog">
     <div class="dlg-body" id="importBody"></div>

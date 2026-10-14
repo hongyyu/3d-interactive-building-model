@@ -50,7 +50,7 @@ export let dropBox=null, slotBox=null;
 /* ---------- scene objects ---------- */
 function makeBuilding(def){
   const g=new THREE.Group(); scene.add(g);
-  const R={def:def,g:g,fade:1,shells:[],slabs:[],slabMats:[],voids:[],voidT:[],voidV:[],plans:[],tag:null,tw:0,th:0,shown:null,sk:0};
+  const R={def:def,g:g,fade:1,shells:[],slabs:[],slabMats:[],voids:[],voidT:[],voidV:[],plans:[],lift:[],tag:null,tw:0,th:0,shown:null,sk:0};
   const W=def.w*S, Dp=def.d*S, n=def.levels.length;
   R.shellMat=new THREE.MeshLambertMaterial({color:0xffffff});
   R.padMat=new THREE.MeshLambertMaterial({color:0xf1f3f6});
@@ -59,21 +59,38 @@ function makeBuilding(def){
   const pad=new THREE.Mesh(boxGeo,R.padMat);
   pad.scale.set(W+3,PAD,Dp+3); pad.position.set(def.x*S,PAD/2,def.z*S); pad.receiveShadow=true;
   pad.add(new THREE.LineSegments(edgeGeo,R.padEdge)); g.add(pad);
-  for(let f=0;f<n;f++){
-    const sh=new THREE.Mesh(boxGeo,R.shellMat);
-    sh.castShadow=true; sh.receiveShadow=true; sh.userData={t:'shell',b:def.id};
-    sh.add(new THREE.LineSegments(edgeGeo,R.shellEdge)); g.add(sh); R.shells.push(sh);
-    const sm=new THREE.MeshLambertMaterial({color:0xffffff});
-    const sl=new THREE.Mesh(boxGeo,sm);
-    sl.scale.set(W,SLAB,Dp); sl.castShadow=true; sl.receiveShadow=true;
-    sl.add(new THREE.LineSegments(edgeGeo,slabEdgeMat)); g.add(sl); R.slabs.push(sl); R.slabMats.push(sm);
-    const vm=new THREE.Mesh(boxGeo,new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.28,depthWrite:false}));
-    vm.add(new THREE.LineSegments(edgeGeo,voidEdgeMat)); g.add(vm); R.voids.push(vm);
-  }
+  for(let f=0;f<n;f++) addLevelMeshes(R);
   const tag=document.createElement('button');
   tag.type='button'; tag.className='btag'; tag.dataset.b=def.id;
   overlay.appendChild(tag); R.tag=tag;
   return R;
+}
+/* one level's shell, slab and void box; the shell material is shared by the whole building */
+function addLevelMeshes(R){
+  const def=R.def, W=def.w*S, Dp=def.d*S;
+  const sh=new THREE.Mesh(boxGeo,R.shellMat);
+  sh.castShadow=true; sh.receiveShadow=true; sh.userData={t:'shell',b:def.id};
+  sh.add(new THREE.LineSegments(edgeGeo,R.shellEdge)); R.g.add(sh); R.shells.push(sh);
+  const sm=new THREE.MeshLambertMaterial({color:0xffffff});
+  const sl=new THREE.Mesh(boxGeo,sm);
+  sl.scale.set(W,SLAB,Dp); sl.castShadow=true; sl.receiveShadow=true;
+  sl.add(new THREE.LineSegments(edgeGeo,slabEdgeMat)); R.g.add(sl); R.slabs.push(sl); R.slabMats.push(sm);
+  const vm=new THREE.Mesh(boxGeo,new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.28,depthWrite:false}));
+  vm.add(new THREE.LineSegments(edgeGeo,voidEdgeMat)); R.g.add(vm); R.voids.push(vm);
+  R.lift.push(0);
+}
+function removeLevelMeshes(R){
+  const sh=R.shells.pop(), sl=R.slabs.pop(), vm=R.voids.pop();
+  R.g.remove(sh,sl,vm);
+  R.slabMats.pop().dispose(); vm.material.dispose(); R.lift.pop();
+}
+/* Matches building bid's per-level meshes to n levels. Added levels start lifted (R.lift = 1)
+   and drop into place; scene/update.js eases the lift to 0. */
+export function setLevelCount(bid,n){
+  const R=B[bid];
+  while(R.shells.length<n){ addLevelMeshes(R); R.lift[R.lift.length-1]=1; }
+  while(R.shells.length>n) removeLevelMeshes(R);
+  [R.plans,R.voidT,R.voidV].forEach(a=>{ if(a.length>n) a.length=n; });
 }
 function makeDept(id){
   const base=new THREE.Color(deptColor(id));

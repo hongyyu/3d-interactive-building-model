@@ -4,8 +4,9 @@ import {leftEl,rightEl,overlay} from '../dom.js';
 import {$} from '../util.js';
 import {retarget,setViewRate} from '../scene/view.js';
 import {renderLeft,renderRight} from './panels.js';
-import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout} from './actions.js';
+import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,removeTopLevel} from './actions.js';
 import {bindImport,chooseImportFile,loadDemo} from './importDialog.js';
+import {toggleLaser} from './laser.js';
 
 /* panel, overlay and toolbar clicks */
 export function bindControls(){
@@ -23,6 +24,8 @@ export function bindControls(){
     if(a==='desel'){ state.selDept=null; renderRight(); }
     else if(a==='inc'&&id) setArea(id,DEPTS[id].a+500);
     else if(a==='dec'&&id) setArea(id,DEPTS[id].a-500);
+    else if(a==='addlevel') addLevel(state.sel);
+    else if(a==='rmlevel') removeTopLevel(state.sel);
   });
   rightEl.addEventListener('change',e=>{
     if(e.target.id==='area') setArea(state.selDept,parseFloat(e.target.value));
@@ -41,6 +44,7 @@ export function bindControls(){
     else if(a==='resetview'){ retarget(false); setViewRate(3.2); }
     else if(a==='resetlayout') resetLayout();
     else if(a==='import') chooseImportFile();
+    else if(a==='laser') toggleLaser();
     else if(a==='present'){
       const on=!$('#app').classList.contains('present');
       $('#app').classList.toggle('present',on); b.setAttribute('aria-pressed',String(on));
