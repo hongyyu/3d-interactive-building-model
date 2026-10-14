@@ -18,19 +18,49 @@
       </button>
       <div class="brand"><h1 id="ptitle">3D Interactive Building Model</h1><p id="psub"></p></div>
     </div>
-    <div class="seg" role="group" aria-label="View mode" id="modes">
-      <button type="button" data-mode="mass" aria-pressed="true">3D Massing</button>
-      <button type="button" data-mode="axon" aria-pressed="false">Axon</button>
-      <button type="button" data-mode="stack" aria-pressed="false">Section Stack</button>
+    <div class="island" role="group" aria-label="View mode" id="modes">
+      <button type="button" class="tool wide" data-mode="mass" aria-label="3D Massing" aria-pressed="true" aria-keyshortcuts="1" data-tip="3D Massing — 1">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6 16.6 6.3v7.4L10 17.4l-6.6-3.7V6.3zM3.4 6.3 10 10l6.6-3.7M10 10v7.4"/></svg><span>3D Massing</span><kbd>1</kbd>
+      </button>
+      <button type="button" class="tool wide" data-mode="axon" aria-label="Axon" aria-pressed="false" aria-keyshortcuts="2" data-tip="Axon — 2">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8l6.6 3.1L10 9 3.4 5.9zM3.4 10l6.6 3.1 6.6-3.1M3.4 14.1l6.6 3.1 6.6-3.1"/></svg><span>Axon</span><kbd>2</kbd>
+      </button>
+      <button type="button" class="tool wide" data-mode="stack" aria-label="Section Stack" aria-pressed="false" aria-keyshortcuts="3" data-tip="Section Stack — 3">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.4" y="3" width="13.2" height="14" rx="1.2"/><path d="M3.4 7.7h13.2M3.4 12.3h13.2"/></svg><span>Section Stack</span><kbd>3</kbd>
+      </button>
     </div>
-    <div class="tools" id="tools">
-      <a class="btn" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">Download template</a>
-      <button type="button" class="btn" data-act="import" title="Load a program from Excel (.xlsx) or CSV">Import program…</button>
-      <button type="button" class="btn" data-act="labels" aria-pressed="true">Labels</button>
-      <button type="button" class="btn" data-act="resetview">Reset view</button>
-      <button type="button" class="btn" data-act="resetlayout">Reset layout</button>
-      <button type="button" class="btn" data-act="laser" aria-pressed="false" title="Red laser pointer with a trail for presenting; Alt-drag draws a fading stroke (L)"><i class="laserdot" aria-hidden="true"></i>Laser</button>
-      <button type="button" class="btn" data-act="present" aria-pressed="false">Present</button>
+    <div class="island" role="group" aria-label="Tools" id="tools">
+      <button type="button" class="tool" data-act="labels" aria-pressed="true" aria-label="Labels" aria-keyshortcuts="T" data-tip="Labels — T">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 3.4h6l7 7a1.4 1.4 0 0 1 0 2l-4 4a1.4 1.4 0 0 1-2 0l-7-7z"/><circle cx="6.9" cy="6.9" r="1.2"/></svg><kbd>T</kbd>
+      </button>
+      <button type="button" class="tool" data-act="laser" aria-pressed="false" aria-label="Laser pointer" aria-keyshortcuts="L" data-tip="Laser pointer — L · Alt-drag draws">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle class="dot" cx="10" cy="10" r="2.7"/><path d="M10 2.8v2.4M10 14.8v2.4M2.8 10h2.4M14.8 10h2.4M4.9 4.9l1.7 1.7M13.4 13.4l1.7 1.7M15.1 4.9l-1.7 1.7M6.6 13.4l-1.7 1.7"/></svg><kbd>L</kbd>
+      </button>
+      <button type="button" class="tool" data-act="present" aria-pressed="false" aria-label="Present" aria-keyshortcuts="P" data-tip="Present — P">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.8 3.4h14.4M4 3.4v8.4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3.4M10 12.8v3.8M7.4 17.4l2.6-.8 2.6.8M7 9.6l2-2 1.6 1.6L13 6.8"/></svg><kbd>P</kbd>
+      </button>
+      <i class="sep" aria-hidden="true"></i>
+      <button type="button" class="tool" data-act="resetview" aria-label="Reset view" aria-keyshortcuts="F" data-tip="Reset view — F">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 7V5.4a2 2 0 0 1 2-2H7M13 3.4h1.6a2 2 0 0 1 2 2V7M16.6 13v1.6a2 2 0 0 1-2 2H13M7 16.6H5.4a2 2 0 0 1-2-2V13"/><circle cx="10" cy="10" r="1.7"/></svg><kbd>F</kbd>
+      </button>
+      <i class="sep" aria-hidden="true"></i>
+      <div class="menuwrap">
+        <button type="button" class="tool" data-act="menu" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" aria-controls="toolMenu" data-tip="More actions">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.6 5.6h12.8M3.6 10h12.8M3.6 14.4h12.8"/></svg>
+        </button>
+        <div class="menu" id="toolMenu" role="menu" aria-label="More actions" hidden>
+          <button type="button" role="menuitem" data-act="import" title="Load a program from Excel (.xlsx) or CSV">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 12.6V3.4M6.6 6.8 10 3.4l3.4 3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Import program…
+          </button>
+          <a role="menuitem" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4v9.2M6.6 9.2 10 12.6l3.4-3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Download template
+          </a>
+          <hr>
+          <button type="button" role="menuitem" data-act="resetlayout" title="Put every department back where the loaded program had it">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.8 4.2v3.6h3.6"/><path d="M4.3 7.6A6.2 6.2 0 1 1 4.6 13"/></svg>Reset layout
+          </button>
+        </div>
+      </div>
     </div>
   </header>
   <aside class="side left" id="left"></aside>

@@ -6,6 +6,9 @@ html,body{margin:0}
   --line:#e4e7ec; --line-2:#d3d8e0; --alert:#c8234b;
   --ui:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --tool-hover:#f1f3f7; --tool-on:#e5e8f6; --tool-on-ink:#1f2a66; --laser:rgb(230,32,50); --laser-on:#fde8ea;
+  --island-shadow:0 0 0 1px rgba(20,25,34,.07),0 1px 2px rgba(20,25,34,.08),0 2px 4px rgba(20,25,34,.05);
+  --menu-shadow:0 0 0 1px rgba(20,25,34,.07),0 1px 3px rgba(20,25,34,.08),0 8px 20px rgba(20,25,34,.1);
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:13px;line-height:1.4}
@@ -17,19 +20,42 @@ button,input,select{font:inherit;color:inherit}
   grid-template-areas:"top top top" "left stage right"}
 .app.present{grid-template-columns:0 minmax(0,1fr) 0}
 .app.present .side{display:none}
-.top{grid-area:top;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+.top{grid-area:top;position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
 .brand{min-width:0}
 .brand h1{margin:0;font:700 15px/1.2 var(--ui);letter-spacing:.01em}
 .brand p{margin:2px 0 0;font:400 10.5px/1.2 var(--mono);color:var(--ink-3)}
-.seg{display:flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden}
-.seg button{border:0;background:#fff;padding:8px 14px;font:500 12.5px/1 var(--ui);cursor:pointer;border-right:1px solid var(--line)}
-.seg button:last-child{border-right:0}
-.seg button:hover{background:#f3f5f8}
-.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
-.tools{display:flex;flex-wrap:wrap;gap:6px}
+/* Toolbar islands, after Excalidraw: floating white groups of icon tools with a shortcut hint in
+   the corner and a tooltip on hover. The island is 38px tall but takes 32px in the layout, so the
+   header keeps the height its brand block gives it. */
+.island{position:relative;display:flex;align-items:center;gap:2px;padding:3px;margin-block:-3px;background:#fff;border-radius:10px;box-shadow:var(--island-shadow)}
+.tool{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:32px;height:32px;padding:0;border:0;border-radius:7px;background:none;color:var(--ink);cursor:pointer;font:500 12.5px/1 var(--ui);white-space:nowrap}
+.tool.wide{padding:0 15px 0 10px}
+.tool svg{flex:none;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tool kbd{position:absolute;right:3px;bottom:2px;font:400 8.5px/1 var(--mono);color:var(--ink-3);pointer-events:none}
+.tool:hover{background:var(--tool-hover)}
+.tool[aria-pressed="true"],.tool[aria-expanded="true"]{background:var(--tool-on);color:var(--tool-on-ink)}
+.tool[aria-pressed="true"] kbd{color:var(--tool-on-ink);opacity:.6}
+.tool[data-act=laser] .dot{fill:var(--laser);stroke:none}
+.tool[data-act=laser][aria-pressed="true"]{background:var(--laser-on);color:var(--laser)}
+.tool[data-act=laser][aria-pressed="true"] kbd{color:var(--laser)}
+.sep{align-self:center;width:1px;height:20px;margin:0 4px;background:var(--line)}
+/* tooltip: name and shortcut, under the tool; hidden after a click until the pointer leaves */
+.tool[data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);z-index:20;padding:5px 8px;border-radius:6px;background:var(--ink);color:#fff;font:500 11px/1.2 var(--ui);white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s,visibility .12s}
+#tools .menuwrap .tool::after{left:auto;right:0;transform:none}
+@media (hover:hover){.tool[data-tip]:hover::after{opacity:1;visibility:visible;transition-delay:.35s}}
+.tool[data-tip]:focus-visible::after{opacity:1;visibility:visible}
+.tool.tipoff::after,.tool[aria-expanded="true"]::after{display:none}
+/* the More actions menu */
+.menuwrap{position:relative;display:flex}
+.menu{position:absolute;top:calc(100% + 9px);right:-3px;z-index:20;min-width:212px;display:flex;flex-direction:column;padding:6px;background:#fff;border-radius:10px;box-shadow:var(--menu-shadow)}
+.menu[hidden]{display:none}
+.menu [role=menuitem]{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--ink);font:500 12.5px/1 var(--ui);text-align:left;text-decoration:none;cursor:pointer}
+.menu [role=menuitem]:hover,.menu [role=menuitem]:focus-visible{background:var(--tool-hover);outline:none}
+.menu svg{flex:none;width:17px;height:17px;fill:none;stroke:var(--ink-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.menu hr{width:100%;margin:5px 0;border:0;border-top:1px solid var(--line)}
 .btn{border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:7px 10px;font:500 12px/1 var(--ui);cursor:pointer}
 .btn:hover{background:#f3f5f8}
-.btn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+@media (max-width:999px){ .tool.wide{width:32px;padding:0} .tool.wide span{display:none} }
 .side{background:var(--panel);overflow:auto;min-width:0;padding:14px 16px;display:flex;flex-direction:column;gap:20px}
 .left{grid-area:left;border-right:1px solid var(--line)}
 .right{grid-area:right;border-left:1px solid var(--line)}
@@ -133,9 +159,6 @@ a.btn{display:inline-block;text-decoration:none;color:var(--ink)}
 .mini:disabled{opacity:.45;cursor:default;background:#fff}
 .lvempty{margin-top:5px}
 /* presenter laser */
-.laserdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(230,32,50);margin-right:6px;vertical-align:1px;box-shadow:0 0 0 2px rgba(230,32,50,.2)}
-.btn[data-act="laser"][aria-pressed="true"]{background:rgb(230,32,50);border-color:rgb(230,32,50);color:#fff}
-.btn[data-act="laser"][aria-pressed="true"] .laserdot{background:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
 .laser{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:40}
 /* start screen */
 .welcome{position:fixed;inset:0;z-index:30;overflow:auto;display:grid;place-items:center;padding:40px 16px;
