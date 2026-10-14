@@ -22,6 +22,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of `#stage`. Three steps also get full-page shots.
   - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then draws with the laser. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
+  - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
 
@@ -112,6 +113,12 @@ Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and
 - Text widths are measured with a canvas and cached per label (`d.nw`, `d.aw`). Call `setLabelHTML(d)` after changing a department's name or area so they are measured again.
 
 **Panels** (`ui/panels.js`): `renderLeft()` and `renderRight()` rebuild their `innerHTML` from strings. Pass every program or user string through `esc()`. Clicks are handled in `ui/controls.js` by delegated listeners on `#left`, `#right`, `#overlay`, `#modes` and `#tools`, keyed off `data-b`, `data-dept`, `data-cat`, `data-act` and `data-mode` attributes. New controls should follow the same pattern.
+
+**Toolbar** (header, `index.html` + `ui/controls.js`): two Excalidraw-style islands, `#modes` (view modes) and `#tools`. Each `.tool` is an icon button with a `<kbd>` shortcut hint and a CSS tooltip from `data-tip`.
+- The islands are 38px tall but take 32px of layout (`margin-block:-3px`), so the header keeps the height of the brand block. A taller header would shrink the stage and change every stage screenshot.
+- Import program…, Download template and Reset layout live in the ☰ menu (`#toolMenu`); `menuAction()` in the spec opens it. Its keyboard handling and outside-click closing are in `bindToolbarUI()`.
+- Single-key shortcuts are in the `KEYS` map in `ui/controls.js`. `L` (laser) stays in `ui/laser.js`. Shortcuts are ignored with a modifier key, while typing in a field, while a dialog is open, and while the start screen covers the app.
+- A tool's tooltip is hidden after it is clicked (class `tipoff`) until the pointer leaves it, so it doesn't sit over the stage.
 
 **Input** (`ui/pointer.js`): camera controls are custom pointer handling (there is no OrbitControls). A small `gesture` state machine handles orbit, pan (right-drag, Shift, or any drag in stack mode), two-finger pinch, wheel zoom, and click-vs-drag on departments and building shells. The click/drag threshold is 5 px.
 

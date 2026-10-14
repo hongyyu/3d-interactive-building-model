@@ -42,6 +42,12 @@ async function dragLabel(page, name, dx, dy) {
   for (let i = 1; i <= 10; i++) await page.mouse.move(c.x + dx * i / 10, c.y + dy * i / 10);
 }
 
+/* runs an item of the toolbar's More actions menu */
+async function menuAction(page, sel) {
+  await page.click('#tools [data-act=menu]');
+  await page.click('#toolMenu ' + sel);
+}
+
 async function dragCanvas(page, button, sx, sy) {
   const b = await page.locator('#gl').boundingBox();
   const x = b.x + 40, y = b.y + 60;
@@ -80,7 +86,7 @@ const steps = [
   ['btag-cup', p => p.click('#overlay .btag[data-b=cup]')],
   ['campus', p => p.click('#left [data-act=campus]')],
   ['select-tower-card', p => p.click('#left [data-b=tower]')],
-  ['resetlayout', p => p.click('#tools [data-act=resetlayout]')],
+  ['resetlayout', p => menuAction(p, '[data-act=resetlayout]')],
   ['present-on', p => p.click('#tools [data-act=present]')],
   ['present-off', p => p.click('#tools [data-act=present]')],
   ['narrow-viewport', p => p.setViewportSize({width: 420, height: 900})],
@@ -125,7 +131,7 @@ test('demo program scenario', async ({page}) => {
 
 test('downloaded template imports back to the same model', async ({page}) => {
   const errors = await open(page);
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#tools a[download]')]);
+  const [download] = await Promise.all([page.waitForEvent('download'), menuAction(page, 'a[download]')]);
   expect(download.suggestedFilename()).toBe('program_template.xlsx');
   await page.setInputFiles('#importFile', {
     name: 'program_template.xlsx',
@@ -183,7 +189,7 @@ test('CSV import reports problems and fills the Unassigned tray', async ({page})
   // Reset layout returns to the imported layout, not the demo
   await page.selectOption('#lvl', '-1');
   await expect(right).toContainText('Unassigned · 4');
-  await page.click('#tools [data-act=resetlayout]');
+  await menuAction(page, '[data-act=resetlayout]');
   await expect(right).toContainText('Unassigned · 3');
   await expect(page.locator('#psub')).toHaveText('program-with-issues.csv · imported');
   expect(errors).toEqual([]);
@@ -240,7 +246,7 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await expect.soft(page.locator('#stage')).toHaveScreenshot('level-removed.png');
 
   // Reset layout restores the loaded level count, so the view matches the scenario's axon step
-  await page.click('#tools [data-act=resetlayout]');
+  await menuAction(page, '[data-act=resetlayout]');
   await expect(tower).toContainText('8 levels');
   await expect(right).not.toContainText('Unassigned');
   await settle(page);
@@ -270,5 +276,49 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await page.mouse.move(b.x + b.width + 40, b.y + 40);
   await settle(page);
   await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
+  expect(errors).toEqual([]);
+});
+
+test('toolbar shortcuts and menu', async ({page}) => {
+  const errors = await open(page);
+  const pressed = sel => expect(page.locator(sel)).toHaveAttribute('aria-pressed', 'true');
+  // 1/2/3 switch the view mode, T toggles labels, P presents
+  await page.keyboard.press('2');
+  await pressed('#modes [data-mode=axon]');
+  await page.keyboard.press('3');
+  await pressed('#modes [data-mode=stack]');
+  await page.keyboard.press('t');
+  await expect(page.locator('#tools [data-act=labels]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#overlay .lbl:visible')).toHaveCount(0);
+  await page.keyboard.press('t');
+  await pressed('#tools [data-act=labels]');
+  await page.keyboard.press('p');
+  await expect(page.locator('#app')).toHaveClass(/present/);
+  await page.keyboard.press('p');
+  await expect(page.locator('#app')).not.toHaveClass(/present/);
+  await page.keyboard.press('1');
+  await pressed('#modes [data-mode=mass]');
+  // shortcuts are ignored while typing in a field
+  await page.click('#left [data-b=tower]');
+  await page.click('#right .chip[data-dept=icu]');
+  await page.focus('#area');
+  await page.keyboard.press('2');
+  await pressed('#modes [data-mode=mass]');
+  await page.fill('#area', '18000');
+  // the menu opens from the keyboard with focus on its first item, and Escape closes it
+  await page.focus('#tools [data-act=menu]');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#toolMenu')).toBeVisible();
+  await expect(page.locator('#toolMenu [data-act=import]')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#toolMenu a[download]')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#toolMenu')).toBeHidden();
+  await expect(page.locator('#tools [data-act=menu]')).toBeFocused();
+  // a click outside closes it too
+  await page.click('#tools [data-act=menu]');
+  await expect(page.locator('#tools [data-act=menu]')).toHaveAttribute('aria-expanded', 'true');
+  await page.mouse.click(700, 500);
+  await expect(page.locator('#toolMenu')).toBeHidden();
   expect(errors).toEqual([]);
 });
