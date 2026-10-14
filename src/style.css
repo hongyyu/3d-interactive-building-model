@@ -89,13 +89,15 @@ button,input,select{font:inherit;color:inherit}
 .stage{grid-area:stage;position:relative;background:#fff;overflow:hidden;min-width:0;min-height:0}
 #gl{display:block;width:100%;height:100%;touch-action:none}
 #overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.lbl{position:absolute;left:0;top:0;display:none;text-align:center;color:#10151d;overflow:hidden;white-space:nowrap}
+.lbl{position:absolute;left:0;top:0;transform-origin:0 0;display:none;text-align:center;color:#10151d;overflow:hidden;white-space:nowrap}
 .lbl b{display:block;font:600 11px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis}
 .lbl span{display:block;font:400 10px/1.2 var(--mono);opacity:.78}
+.lbl.chip{background:#fff;border:1px solid var(--line-2);border-radius:5px;padding:3px 7px;box-shadow:0 4px 12px rgba(20,25,35,.12)}
 .btag{position:absolute;left:0;top:0;display:none;pointer-events:auto;cursor:pointer;background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:5px 8px;white-space:nowrap;font:600 11.5px/1.2 var(--ui);color:var(--ink);box-shadow:0 4px 12px rgba(20,25,35,.08)}
 .btag small{display:block;font:400 10px/1.3 var(--mono);color:var(--ink-3)}
 .btag.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .btag.on small{color:#b9c1cf}
+.btag.off{visibility:hidden}
 .ftag{position:absolute;left:0;top:0;display:none;white-space:nowrap;font:400 10.5px/1 var(--mono);color:var(--ink-2)}
 .ftag b{font:700 11px var(--ui);color:var(--ink);margin-right:4px}
 .ftag.over{color:var(--alert)}

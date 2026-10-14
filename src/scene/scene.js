@@ -50,7 +50,7 @@ export let dropBox=null, slotBox=null;
 /* ---------- scene objects ---------- */
 function makeBuilding(def){
   const g=new THREE.Group(); scene.add(g);
-  const R={def:def,g:g,fade:1,shells:[],slabs:[],slabMats:[],voids:[],voidT:[],voidV:[],plans:[],lift:[],tag:null};
+  const R={def:def,g:g,fade:1,shells:[],slabs:[],slabMats:[],voids:[],voidT:[],voidV:[],plans:[],lift:[],tag:null,tw:0,th:0,shown:null,sk:0};
   const W=def.w*S, Dp=def.d*S, n=def.levels.length;
   R.shellMat=new THREE.MeshLambertMaterial({color:0xffffff});
   R.padMat=new THREE.MeshLambertMaterial({color:0xf1f3f6});
@@ -100,14 +100,14 @@ function makeDept(id){
   const ed=new THREE.LineSegments(edgeGeo,edgeMat); mesh.add(ed);
   scene.add(mesh);
   const lbl=document.createElement('div'); lbl.className='lbl'; overlay.appendChild(lbl);
-  const d={id:id,mesh:mesh,ed:ed,mat:mat,base:base,lbl:lbl,vx:0,vf:0,vw:1,tx:0,tf:0,tw:1,b:null,f:0,dim:1,lw:-1,lh:-1};
+  const d={id:id,mesh:mesh,ed:ed,mat:mat,base:base,lbl:lbl,vx:0,vf:0,vw:1,tx:0,tf:0,tw:1,b:null,f:0,dim:1,lw:-1,lm:-1,on:0,nw:-1,aw:0};
   setLabelHTML(d);
   return d;
 }
 export function setLabelHTML(d){
   const dd=DEPTS[d.id];
   d.lbl.innerHTML='<b>'+esc(dd.n)+'</b><span>'+fmt(dd.a)+' SF</span>';
-  d.lh=-1;
+  d.lm=-1; d.nw=-1;
 }
 export function buildScene(){
   BUILDINGS.forEach(def=>{B[def.id]=makeBuilding(def);});
