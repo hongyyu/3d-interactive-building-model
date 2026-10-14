@@ -2,10 +2,11 @@ import {PROJECT,DEPTS,BUILDINGS,setProjectData} from '../data/project.js';
 import {state,INIT_LEVELS,INIT_AREAS,initState} from '../state.js';
 import {hintEl} from '../dom.js';
 import {$,clamp} from '../util.js';
-import {B,D,setLabelHTML,clearScene,buildScene,fitSite} from '../scene/scene.js';
+import {B,D,setLabelHTML,clearScene,buildScene,fitSite,setLevelCount} from '../scene/scene.js';
 import {retarget,snapView,setViewRate} from '../scene/view.js';
 import {rebuildFloorTags,updateFloorTagText} from '../scene/overlay.js';
 import {relayout,levelOf} from '../layout/plan.js';
+import {MAX_LEVELS} from '../scene/constants.js';
 import {renderRight,refreshUI} from './panels.js';
 
 export const HINTS={
@@ -54,13 +55,43 @@ export function moveDeptToLevel(id,f){
   if(f<0) state.unassigned.push(id); else lv[f].push(id);
   relayout(false); refreshUI();
 }
+/* after a building's level count changes: rebuild its level meshes and floor tags, then reframe
+   the camera so the new height fits */
+function levelCountChanged(bid){
+  setLevelCount(bid,state.levels[bid].length);
+  relayout(false);
+  if(bid===state.sel) rebuildFloorTags();
+  refreshUI(); retarget(true); setViewRate(3.2);
+}
+/* adds an empty level on top of building bid */
+export function addLevel(bid){
+  const lv=state.levels[bid];
+  if(!lv||lv.length>=MAX_LEVELS)return;
+  lv.push([]);
+  levelCountChanged(bid);
+}
+/* removes the top level of building bid; its departments go to the Unassigned tray */
+export function removeTopLevel(bid){
+  const lv=state.levels[bid];
+  if(!lv||lv.length<=1)return;
+  lv.pop().forEach(id=>state.unassigned.push(id));
+  levelCountChanged(bid);
+}
 export function resetLayout(){
   const init=JSON.parse(INIT_LEVELS);
-  init.levels.forEach((lv,i)=>{state.levels[BUILDINGS[i].id]=lv;});
+  let resized=false;
+  init.levels.forEach((lv,i)=>{
+    const bid=BUILDINGS[i].id;
+    if(state.levels[bid].length!==lv.length){ resized=true; setLevelCount(bid,lv.length); }
+    state.levels[bid]=lv;
+  });
   state.unassigned=init.unassigned;
   for(const k in INIT_AREAS){ DEPTS[k].a=INIT_AREAS[k]; setLabelHTML(D[k]); }
   state.selDept=null; state.isolate=null;
-  relayout(false); refreshUI();
+  relayout(false);
+  if(resized) rebuildFloorTags();
+  refreshUI();
+  if(resized){ retarget(true); setViewRate(3.2); }
 }
 /* replaces the whole project (demo or imported) and rebuilds the scene from it */
 export function openProject(p){

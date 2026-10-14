@@ -11,7 +11,8 @@ let dlg, body, ok, pending=null;
 async function importFile(file){
   pending=null; ok.hidden=true;
   body.innerHTML=heading(file.name)+'<p class="note">Reading…</p>';
-  if(!dlg.open) dlg.showModal();
+  // Escape closes the dialog without changing returnValue, so clear an "ok" left by an earlier import
+  if(!dlg.open){ dlg.returnValue=''; dlg.showModal(); }
   let r;
   try{ r=await readProgramFile(file); }
   catch(err){ r={project:null,errors:['This file could not be read. Use an Excel workbook (.xlsx) or a CSV file.'],warnings:[]}; }

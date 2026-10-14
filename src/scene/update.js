@@ -10,7 +10,7 @@ export function updateScene(k){
   grid.visible=grid.material.opacity>0.02;
   for(const bid in B){
     const R=B[bid], def=R.def, sel=bid===selId;
-    const W=def.w*S, Dp=def.d*S, fhU=def.fh*S, pitch=fhU*(1+explode), n=def.levels.length;
+    const W=def.w*S, Dp=def.d*S, fhU=def.fh*S, pitch=fhU*(1+explode), n=R.shells.length;
     const tf=sel?1:(mode==='mass'?1:0);
     R.fade+=(tf-R.fade)*k; if(Math.abs(tf-R.fade)<0.01)R.fade=tf;
     R.g.visible=sel||R.fade>0.01;
@@ -19,7 +19,9 @@ export function updateScene(k){
     [R.shellMat,R.padMat].forEach(m=>{ if(m.transparent!==tr){m.transparent=tr;m.needsUpdate=true;} m.opacity=op; m.depthWrite=!tr; });
     R.shellEdge.opacity=0.9*op; R.padEdge.opacity=op;
     for(let f=0;f<n;f++){
-      const y0=BASE+f*pitch;
+      // a newly added level drops in from three floors up
+      if(R.lift[f]){ R.lift[f]*=1-k; if(R.lift[f]<0.002) R.lift[f]=0; }
+      const y0=BASE+f*pitch+R.lift[f]*fhU*3;
       const sh=R.shells[f]; sh.visible=!sel;
       sh.position.set(def.x*S,y0+(fhU-0.05)/2,def.z*S); sh.scale.set(W,fhU-0.05,Dp);
       const sl=R.slabs[f]; sl.visible=sel;

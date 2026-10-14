@@ -8,6 +8,8 @@ import {updateOverlay} from './scene/overlay.js';
 import {HINTS,openProject} from './ui/actions.js';
 import {bindControls} from './ui/controls.js';
 import {bindPointer} from './ui/pointer.js';
+import {bindLaser} from './ui/laser.js';
+import {bindWelcome,welcomeOpen,closeWelcome} from './ui/welcome.js';
 
 $('#ptitle').textContent=DEMO.title; $('#psub').textContent=DEMO.sub;
 
@@ -15,12 +17,15 @@ $('#ptitle').textContent=DEMO.title; $('#psub').textContent=DEMO.sub;
 let lastT=performance.now();
 function frame(now){
   const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
-  const k=RM?1:1-Math.exp(-dt*10);
-  stepView(dt);
-  updateCamera();
-  updateScene(k);
-  updateOverlay();
-  renderer.render(scene,camera);
+  // the start screen covers the whole app, so the scene behind it is left as is
+  if(!welcomeOpen()){
+    const k=RM?1:1-Math.exp(-dt*10);
+    stepView(dt);
+    updateCamera();
+    updateScene(k);
+    updateOverlay();
+    renderer.render(scene,camera);
+  }
   requestAnimationFrame(frame);
 }
 
@@ -28,6 +33,8 @@ function frame(now){
 function boot(){
   bindControls();
   bindPointer();
+  bindLaser();
+  bindWelcome();
   resize();
   openProject(DEMO);
   hintEl.textContent=HINTS.mass;
@@ -39,4 +46,7 @@ function boot(){
 }
 
 if(renderer) boot();
-else stage.insertAdjacentHTML('beforeend','<p class="nogl">The 3D view needs WebGL, which is not available in this browser.</p>');
+else {
+  closeWelcome(true);
+  stage.insertAdjacentHTML('beforeend','<p class="nogl">The 3D view needs WebGL, which is not available in this browser.</p>');
+}
