@@ -75,6 +75,18 @@
     <div class="hint laser-hint">Drag to point · right-drag to pan · scroll to zoom · L or Esc to stop</div>
   </main>
   <aside class="side right" id="right"></aside>
+  <div class="menu lvmenu" id="levelMenu" role="menu" aria-label="Level actions" hidden>
+    <button type="button" role="menuitem" data-act="lvl-above">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.4" y="11.6" width="13.2" height="5" rx="1"/><path d="M10 3.2v6M7 6.2h6"/></svg>Insert level above
+    </button>
+    <button type="button" role="menuitem" data-act="lvl-below">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.4" y="3.4" width="13.2" height="5" rx="1"/><path d="M10 10.8v6M7 13.8h6"/></svg>Insert level below
+    </button>
+    <hr>
+    <button type="button" role="menuitem" data-act="lvl-remove">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.8 5.6h12.4M8 5.6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.6M5.4 5.6l.8 10.2a1.4 1.4 0 0 0 1.4 1.3h4.8a1.4 1.4 0 0 0 1.4-1.3l.8-10.2"/></svg><span>Remove level<small></small></span>
+    </button>
+  </div>
 </div>
 <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
 <dialog class="cpanel" id="colorPanel" aria-labelledby="cpTitle" tabindex="-1">

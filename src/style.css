@@ -131,9 +131,39 @@ button,input,select{font:inherit;color:inherit}
 .step input,.dcard select{flex:1;min-width:0;border:1px solid var(--line-2);border-radius:6px;padding:7px 9px;background:#fff;font:500 13px var(--mono)}
 .dcard select{font-family:var(--ui);font-weight:500;width:100%}
 .note{margin:0;font:400 11px/1.4 var(--mono);color:var(--ink-3)}
-.lvls{display:flex;flex-direction:column;gap:12px}
-.lvl .lh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
-.lvl .lh b{font:600 12px var(--ui)}
+/* level rows: a grip to drag a level to another position, and a ⋯ menu (ui/levels.js) */
+.lvls{position:relative;display:flex;flex-direction:column;gap:2px}
+.lvl{position:relative;padding:5px 6px 7px;margin:0 -6px;border-radius:8px}
+.lvl:hover{background:rgba(20,25,34,.035)}
+.lvls.sorting{cursor:grabbing}
+.lvls.sorting .lvl{transition:transform .16s ease}
+.lvls.sorting .lvl:not(.lifting):hover{background:none}
+.lvl.lifting{z-index:2;transition:none;background:#fff;box-shadow:0 0 0 1px rgba(20,25,34,.08),0 10px 24px rgba(20,25,34,.16)}
+.lvl .lh{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.lvl .lh b{flex:1;min-width:0;font:600 12px var(--ui)}
+.grip,.lvmore{flex:none;display:grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:5px;background:none;color:var(--ink-3)}
+.grip{margin-left:-2px;cursor:grab;touch-action:none}
+.lvmore{cursor:pointer}
+.grip:hover,.lvmore:hover,.lvmore[aria-expanded="true"]{background:var(--tool-hover);color:var(--ink)}
+.grip svg,.lvmore svg{width:14px;height:14px;fill:currentColor}
+.lvls.sorting .grip{cursor:grabbing}
+@media (prefers-reduced-motion:reduce){ .lvls.sorting .lvl{transition:none} }
+.lvmenu{position:fixed;top:0;left:0;right:auto;min-width:220px}
+.lvmenu [role=menuitem] span{display:flex;flex-direction:column;gap:2px}
+.lvmenu small{font:400 10.5px/1.2 var(--mono);color:var(--ink-3)}
+.lvmenu small:empty{display:none}
+.lvmenu [role=menuitem]:has(small:not(:empty)){height:44px}
+.menu [role=menuitem][aria-disabled="true"]{opacity:.45;cursor:default}
+.menu [role=menuitem][aria-disabled="true"]:hover{background:none}
+/* the right panel's title row; its button hides everything below (state.panelOpen) */
+.phead{display:flex;align-items:flex-start;gap:8px}
+.phead>div{flex:1;min-width:0}
+.pfold{flex:none;display:grid;place-items:center;width:28px;height:28px;margin:-2px -4px 0 0;padding:0;border:0;border-radius:7px;background:none;color:var(--ink-2);cursor:pointer}
+.pfold:hover{background:var(--tool-hover);color:var(--ink)}
+.pfold svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+.pfold[aria-expanded="false"] svg{transform:rotate(180deg)}
+.phead .title{margin:0}
+.phead+.kv{margin-top:10px}
 .lvl .lh span{font:400 10.5px var(--mono);color:var(--ink-2)}
 .lvl.over .lh span{color:var(--alert);font-weight:500}
 .bar{display:flex;height:12px;border-radius:3px;overflow:hidden;background:repeating-linear-gradient(135deg,#eef0f4 0 4px,#f7f8fa 4px 8px)}

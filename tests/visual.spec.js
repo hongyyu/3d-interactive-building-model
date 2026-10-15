@@ -55,6 +55,22 @@ async function stageShot(page, name, soft = true) {
   await (soft ? expect.soft(page) : expect(page)).toHaveScreenshot(name, {clip});
 }
 
+/* runs an item of a level row's ⋯ menu in the right panel; f is the level index (0 = Level 1) */
+async function levelAction(page, f, act) {
+  await page.click(`#right .lvl[data-f="${f}"] [data-act=lvlmenu]`);
+  await page.click(`#levelMenu [data-act=${act}]`);
+}
+
+/* drags a level row's grip in the right panel to page height y */
+async function dragLevel(page, f, y, release = true) {
+  const g = await page.locator(`#right .grip[data-f="${f}"]`).boundingBox();
+  const x = g.x + g.width / 2, y0 = g.y + g.height / 2;
+  await page.mouse.move(x, y0);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) await page.mouse.move(x, y0 + (y - y0) * i / 10);
+  if (release) await page.mouse.up();
+}
+
 /* runs an item of the toolbar's More actions menu */
 async function menuAction(page, sel) {
   await page.click('#tools [data-act=menu]');
@@ -252,8 +268,8 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await stageShot(page, 'level-added.png');
 
   // removing a level that holds departments sends them to the Unassigned tray
-  await page.click('#right [data-act=rmlevel]');
-  await page.click('#right [data-act=rmlevel]');
+  await levelAction(page, 8, 'lvl-remove');
+  await levelAction(page, 7, 'lvl-remove');
   await expect(tower).toContainText('7 levels');
   await expect(right.locator('.blk', {hasText: 'Unassigned · 2'}).locator('.chip')).toHaveText([/Behavioral Health/, /Administration/]);
   await settle(page);
@@ -396,6 +412,55 @@ test('toolbar shortcuts and menu', async ({page}) => {
   await expect(page.locator('#tools [data-act=menu]')).toHaveAttribute('aria-expanded', 'true');
   await page.mouse.click(700, 500);
   await expect(page.locator('#toolMenu')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('levels can be reordered, inserted and removed from the panel', async ({page}) => {
+  const errors = await open(page);
+  await page.click('#left [data-b=tower]');
+  await page.click('#modes [data-mode=axon]');
+  const right = page.locator('#right'), row = f => right.locator(`.lvl[data-f="${f}"]`);
+  const tag = n => page.locator('#overlay .ftag').nth(n - 1);
+
+  // drag Level 3 above Level 8: it becomes Level 8, the levels above it move down, and the
+  // building follows (the floor tags show the new totals)
+  const top = await row(7).boundingBox();
+  await dragLevel(page, 2, top.y - 6);
+  await expect(row(7)).toContainText('Imaging');
+  await expect(row(6)).toContainText('Behavioral Health');
+  await expect(row(2)).toContainText('Critical Care (ICU)');
+  await expect(tag(8)).toHaveText('L823.0k / 24.0k');
+  await settle(page);
+  await stageShot(page, 'level-dragged.png');
+
+  // the arrow keys on a grip move its level one step, and the grip keeps focus
+  await page.focus('#right .grip[data-f="7"]');
+  await page.keyboard.press('ArrowDown');
+  await expect(row(6)).toContainText('Imaging');
+  await expect(page.locator('#right .grip[data-f="6"]')).toBeFocused();
+
+  // Escape during a drag puts the old order back
+  await dragLevel(page, 0, (await row(3).boundingBox()).y, false);
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(row(0)).toContainText('Emergency Department');
+  await expect(row(6)).toContainText('Imaging');
+
+  // insert an empty level below Level 5, then remove Level 2, which sends its departments to the tray
+  await levelAction(page, 4, 'lvl-below');
+  await expect(page.locator('#left [data-b=tower]')).toContainText('9 levels');
+  await expect(row(4)).toContainText('Empty level');
+  await expect(row(5)).toContainText('Med-Surg Unit A');
+  await levelAction(page, 1, 'lvl-remove');
+  await expect(page.locator('#left [data-b=tower]')).toContainText('8 levels');
+  await expect(right.locator('.blk', {hasText: 'Unassigned · 3'}).locator('.chip')).toHaveText([/Surgery Suite/, /PACU/, /Sterile Processing/]);
+
+  // the fold button hides everything under the building name, and shows it again
+  await page.click('#right [data-act=fold]');
+  await expect(right.locator('.lvls')).toHaveCount(0);
+  await expect(page.locator('#right [data-act=fold]')).toHaveAttribute('aria-expanded', 'false');
+  await page.click('#right [data-act=fold]');
+  await expect(right.locator('.lvls')).toBeVisible();
   expect(errors).toEqual([]);
 });
 

@@ -84,11 +84,11 @@ function removeLevelMeshes(R){
   R.g.remove(sh,sl,vm);
   R.slabMats.pop().dispose(); vm.material.dispose(); R.lift.pop();
 }
-/* Matches building bid's per-level meshes to n levels. Added levels start lifted (R.lift = 1)
-   and drop into place; scene/update.js eases the lift to 0. */
-export function setLevelCount(bid,n){
+/* Matches building bid's per-level meshes to n levels. With drop, added levels start lifted
+   (R.lift = 1) and drop into place; scene/update.js eases the lift to 0. */
+export function setLevelCount(bid,n,drop){
   const R=B[bid];
-  while(R.shells.length<n){ addLevelMeshes(R); R.lift[R.lift.length-1]=1; }
+  while(R.shells.length<n){ addLevelMeshes(R); if(drop) R.lift[R.lift.length-1]=1; }
   while(R.shells.length>n) removeLevelMeshes(R);
   [R.plans,R.voidT,R.voidV].forEach(a=>{ if(a.length>n) a.length=n; });
 }

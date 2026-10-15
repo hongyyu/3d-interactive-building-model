@@ -4,9 +4,10 @@ import {CATS,DEPTS,BUILDINGS,UNASSIGNED} from './data/project.js';
    for "Reset layout" and "Reset colours" (a department without its own colour is stored as '') */
 export const BDEF={}, INIT_AREAS={}, INIT_CAT_COLORS={}, INIT_DEPT_COLORS={};
 export let INIT_LEVELS='';
-export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,isolate:null,levels:{},unassigned:[],picking:null};
+export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,isolate:null,levels:{},unassigned:[],panelOpen:true,picking:null};
 
-/* state.picking: what the open colour panel edits ('cat:<key>' or 'dept:<id>'), or null */
+/* state.panelOpen: whether the right panel shows more than its title row
+   state.picking: what the open colour panel edits ('cat:<key>' or 'dept:<id>'), or null */
 
 /* Campus overview: 3D Massing with no building focused. Every building shows its departments and
    none is highlighted; state.sel still names the building Axon, Section Stack and the tray use. */
@@ -37,3 +38,7 @@ export function colorsEdited(){
 export let drag=null, hoverId=null;
 export function setDrag(d){ drag=d; }
 export function setHoverId(id){ hoverId=id; }
+/* departments glowing in the model because their level row is hovered or dragged in the right
+   panel; only ui/levels.js changes it */
+export let hotIds=null;
+export function setHotIds(ids){ hotIds=ids; }
