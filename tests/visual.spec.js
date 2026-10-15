@@ -318,6 +318,59 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   expect(errors).toEqual([]);
 });
 
+test('printed report covers every building, level and department', async ({page}) => {
+  await page.clock.setFixedTime(new Date('2026-03-02T12:00:00'));
+  const errors = await open(page);
+  // headless Chromium skips the print dialog but still fires beforeprint and afterprint; this
+  // listener runs after the app's, so it sees the title that names the PDF
+  await page.evaluate(() => { window.printTitles = []; addEventListener('beforeprint', () => printTitles.push(document.title)); });
+  await menuAction(page, '[data-act=print]');
+  expect(await page.evaluate(() => printTitles)).toEqual(['3D Interactive Building Model – Program report']);
+  await expect(page).toHaveTitle('3D Interactive Building Model');
+  // the view picture is rendered at 2x; the model on screen must come back unchanged
+  await settle(page);
+  await stageShot(page, '00-initial.png', false);
+
+  // in print, the page holds only the report: the summary, then one page per building
+  await page.emulateMedia({media: 'print'});
+  const report = page.locator('#report');
+  await expect(report).toBeVisible();
+  await expect(page.locator('#app')).toBeHidden();
+  expect.soft(await report.innerText()).toMatchSnapshot('report.txt');
+  await expect(report.locator('.r-bldg')).toHaveCount(4);
+  expect(await report.locator('.r-bldg').first().evaluate(e => getComputedStyle(e).breakBefore)).toBe('page');
+  // the view picture shows the model, trimmed to it
+  const inked = await report.locator('.r-fig canvas').evaluate(c => {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.min(d[i], d[i + 1], d[i + 2]) < 200) n++;
+    return n / (c.width * c.height);
+  });
+  expect(inked).toBeGreaterThan(0.2);
+  await page.emulateMedia({media: 'screen'});
+
+  // the browser's own print (Ctrl+P / ⌘P) rebuilds it from the live layout. Chromium ignores repeated
+  // print() calls without a user gesture, so fire its events directly
+  const browserPrint = () => page.evaluate(() => { dispatchEvent(new Event('beforeprint')); dispatchEvent(new Event('afterprint')); });
+  await page.click('#left [data-b=tower]');
+  await page.click('#right .chip[data-dept=icu]');
+  await page.fill('#area', '30000');
+  await page.press('#area', 'Enter');
+  await expect(page.locator('#right .lvl', {hasText: 'Level 4'})).toContainText('35,000 / 24,000 SF · over');
+  await page.click('#right .chip[data-dept=bh]');
+  await page.selectOption('#lvl', '-1');
+  await browserPrint();
+  await expect(report.locator('.r-kv').first()).toContainText('35 placed · 1 unassigned');
+  await expect(report.locator('.r-kv').first()).toContainText('1 level');
+  await expect(report.locator('.r-sec', {hasText: 'Unassigned · 1'})).toContainText('Behavioral Health');
+  await expect(report.locator('.r-lvrow.r-over')).toHaveText(/Level 4Over by 11,000 SF\s*35,000\s*146%/);
+
+  // from the start screen the browser prints the page as it is
+  await page.click('#home');
+  await browserPrint();
+  await expect(page.locator('html')).not.toHaveClass(/print-report/);
+  expect(errors).toEqual([]);
+});
+
 test('toolbar shortcuts and menu', async ({page}) => {
   const errors = await open(page);
   const pressed = sel => expect(page.locator(sel)).toHaveAttribute('aria-pressed', 'true');
@@ -408,5 +461,78 @@ test('levels can be reordered, inserted and removed from the panel', async ({pag
   await expect(page.locator('#right [data-act=fold]')).toHaveAttribute('aria-expanded', 'false');
   await page.click('#right [data-act=fold]');
   await expect(right.locator('.lvls')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('colour panel', async ({page}) => {
+  const errors = await open(page);
+  const left = page.locator('#left'), right = page.locator('#right'), panel = page.locator('#colorPanel');
+  const hex = panel.locator('#cpHex'), reset = left.locator('[data-act=resetcolors]'), swatch = left.locator('[data-catcolor=inpt]');
+  const navy = 'rgb(31, 42, 102)';
+
+  // a category swatch opens the panel on the category's colour
+  await expect(reset).toBeHidden();
+  await swatch.click();
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('#cpTitle')).toHaveText('Inpatient Units');
+  await expect(hex).toHaveValue('#5FB27F');
+  await expect(panel.locator('#cpPalette .on')).toHaveAttribute('data-hex', '#5fb27f');
+
+  // palette, saturation/brightness area and hex field all apply at once, and the panel stays open
+  await panel.locator('#cpPalette [data-hex="#3451a8"]').click();
+  await expect(swatch.locator('i')).toHaveCSS('background-color', 'rgb(52, 81, 168)');
+  const sv = await panel.locator('#cpSV').boundingBox();
+  await page.mouse.move(sv.x + sv.width / 2, sv.y + sv.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(sv.x - 30, sv.y + sv.height + 30);  // past the bottom-left corner: black
+  await page.mouse.up();
+  await expect(hex).toHaveValue('#000000');
+  await hex.fill('#1f2a66');
+  await expect(right.locator('.pb .bar i[title^="Inpatient Units"]')).toHaveCSS('background-color', navy);
+  await expect(reset).toBeVisible();
+  await expect(panel).toBeVisible();
+  await page.mouse.move(10, 10);
+  await settle(page);
+  await expect.soft(page).toHaveScreenshot('color-panel-page.png');
+
+  // Escape closes it and returns focus to the swatch
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(swatch).toBeFocused();
+  await settle(page);
+  await stageShot(page, 'recolor-category.png');
+
+  // Reset colours brings back the loaded colours exactly
+  await reset.click();
+  await expect(reset).toBeHidden();
+  await expect(swatch.locator('i')).toHaveCSS('background-color', 'rgb(95, 178, 127)');
+  await settle(page);
+  await stageShot(page, '00-initial.png', false);
+
+  // a department's own colour overrides its category; a label on a dark colour turns white
+  await page.click('#left [data-b=tower]');
+  await page.click('#modes [data-mode=axon]');
+  await page.click('#right .chip[data-dept=icu]');
+  await right.locator('#dcol').click();
+  await expect(panel.locator('#cpKind')).toHaveText('Department colour');
+  await expect(panel.locator('#cpReset')).toBeHidden();
+  await hex.fill('#1f2a66');
+  for (const sel of ['.dhead i', '.bseg[data-dept=icu]', '.chip[data-dept=icu] i', '#dcol i']) await expect(right.locator(sel)).toHaveCSS('background-color', navy);
+  await expect(right.locator('#dcol')).toContainText('Custom');
+  await expect(panel.locator('#cpReset')).toBeVisible();
+  // a click outside closes the panel
+  await right.locator('.title').click();
+  await expect(panel).toBeHidden();
+  await settle(page);
+  await expect(page.locator('#overlay .lbl', {hasText: 'Critical Care (ICU)'})).toHaveClass('lbl inv');
+  await stageShot(page, 'recolor-dept.png');
+
+  // "Use category colour" drops it again
+  await right.locator('#dcol').click();
+  await panel.locator('#cpReset').click();
+  await expect(hex).toHaveValue('#E0554E');
+  await expect(panel.locator('#cpReset')).toBeHidden();
+  await expect(right.locator('#dcol')).toContainText('Category colour');
+  await expect(reset).toBeHidden();
   expect(errors).toEqual([]);
 });

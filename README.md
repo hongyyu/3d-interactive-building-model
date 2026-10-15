@@ -10,9 +10,10 @@ Interactive massing diagram for presenting a medical campus program to clients. 
 
 Department volumes scale with area (SF) relative to the floor plate. Drag a department to change its level or position. Area and level can also be edited in the right panel.
 
-- **Toolbar:** the view modes sit in the middle of the header and the tools on the right, each with its shortcut in the corner and a tooltip on hover: `1` `2` `3` switch the view, `T` labels, `L` laser, `P` present, `F` reset view. The ☰ menu holds **Import program…**, **Download template** and **Reset layout**.
+- **Toolbar:** the view modes sit in the middle of the header and the tools on the right, each with its shortcut in the corner and a tooltip on hover: `1` `2` `3` switch the view, `T` labels, `L` laser, `P` present, `F` reset view. The ☰ menu holds **Import program…**, **Download template**, **Print report (PDF)…** and **Reset layout**.
 - **Start screen:** the app opens on an animated overview with two ways in, **Explore the demo** or **Import Excel program**. The icon left of the title brings it back.
 - **Levels:** **+ Add level** puts an empty level on top of the selected building. **Remove top** removes its top level and sends that level's departments to the Unassigned tray. **Reset layout** (☰ menu) restores the loaded level counts.
+- **Print report:** **Print report (PDF)…** in the ☰ menu (or the browser's own `Ctrl+P` / `⌘P`) prints the whole project. A summary page has campus totals, a picture of the current view, the buildings, the program by category and the Unassigned tray. Then each building gets its own page, with a stacking diagram and every department listed level by level, with SF, share of the floor plate, notes and over-capacity flags. Choose **Save as PDF** in the print dialog to get a PDF.
 - **Laser pointer:** the laser tool (or the `L` key) turns the cursor into a laser pen. Drag on the model to draw a red line that shrinks away within two seconds, so the room can follow along; the model stays still. Right-drag still pans and the wheel still zooms. `L` or Escape turns it off.
 
 ## Run
@@ -28,12 +29,13 @@ npm run preview   # serve dist/ locally
 ```
 
 ## Visual regression test
-`npm run test:visual` builds the app and runs six Playwright tests in headless Chromium:
+`npm run test:visual` builds the app and runs seven Playwright tests in headless Chromium:
 - **Demo scenario:** replays 32 steps covering the view modes, selection, area edits, dragging, camera moves, reset, present mode and a narrow window. At each step it compares a screenshot of the 3D stage and a text snapshot of the panels against the baselines in `tests/visual.spec.js-snapshots/`.
 - **Template round trip:** downloads the template and imports it back, then checks that the model renders exactly like the demo.
 - **CSV import with problems:** imports `tests/fixtures/program-with-issues.csv` and checks the import summary and the Unassigned tray.
 - **Rejected file:** checks that a file with the wrong columns can't be loaded.
 - **Start screen, levels and laser:** imports from the start screen and returns to it. Then it adds and removes levels on the Hospital Tower, resets the layout, and checks that the laser draws only while dragging.
+- **Printed report:** prints from the ☰ menu and checks the report's text and pages. Then it overfills a level, sends a department to the tray and checks that a second print shows both.
 - **Toolbar shortcuts and menu:** checks the keyboard shortcuts, that they are ignored while typing in a field, and that the ☰ menu works from the keyboard.
 
 - First time only: `npx playwright install chromium`

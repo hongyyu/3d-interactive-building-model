@@ -4,23 +4,29 @@ import {leftEl,rightEl,overlay} from '../dom.js';
 import {$} from '../util.js';
 import {retarget,setViewRate} from '../scene/view.js';
 import {renderLeft,renderRight} from './panels.js';
-import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,showCampus} from './actions.js';
+import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,showCampus,resetColors} from './actions.js';
+import {bindColorPanel,editCatColor,editDeptColor} from './colorPanel.js';
 import {bindImport,chooseImportFile,loadDemo} from './importDialog.js';
 import {toggleLaser} from './laser.js';
+import {printReport} from './report.js';
 import {menuKeys} from './menu.js';
 import {bindLevels} from './levels.js';
 
 /* panel, overlay and toolbar clicks */
 export function bindControls(){
   bindImport();
+  bindColorPanel();
   leftEl.addEventListener('click',e=>{
     const bc=e.target.closest('[data-b]'); if(bc){ selectBuilding(bc.dataset.b,true); return; }
+    const sw=e.target.closest('[data-catcolor]'); if(sw){ editCatColor(sw.dataset.catcolor); return; }
     const cat=e.target.closest('[data-cat]'); if(cat){ state.isolate=(state.isolate===cat.dataset.cat)?null:cat.dataset.cat; renderLeft(); return; }
     if(e.target.closest('[data-act="campus"]')) showCampus();
     else if(e.target.closest('[data-act="demo"]')) loadDemo();
+    else if(e.target.closest('[data-act="resetcolors"]')) resetColors();
   });
   rightEl.addEventListener('click',e=>{
     const dp=e.target.closest('[data-dept]'); if(dp){ selectDept(dp.dataset.dept); return; }
+    if(e.target.closest('#dcol')&&state.selDept){ editDeptColor(state.selDept); return; }
     const bc=e.target.closest('[data-b]'); if(bc){ selectBuilding(bc.dataset.b,true); return; }
     const act=e.target.closest('[data-act]'); if(!act)return;
     const a=act.dataset.act, id=state.selDept;
@@ -50,6 +56,7 @@ export function bindControls(){
     else if(a==='resetview') resetView();
     else if(a==='resetlayout') resetLayout();
     else if(a==='import') chooseImportFile();
+    else if(a==='print') printReport();
     else if(a==='laser') toggleLaser();
     else if(a==='present') togglePresent();
   });

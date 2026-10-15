@@ -1,5 +1,5 @@
 import {PROJECT,CATS,DEPTS,BUILDINGS,deptColor} from '../data/project.js';
-import {state,BDEF,isOverview} from '../state.js';
+import {state,BDEF,isOverview,colorsEdited} from '../state.js';
 import {leftEl,rightEl} from '../dom.js';
 import {esc,fmt,fk} from '../util.js';
 import {B} from '../scene/scene.js';
@@ -32,11 +32,14 @@ export function renderLeft(){
   const scope=ov?BUILDINGS.map(b=>b.id):[state.sel], by={};
   scope.forEach(bid=>{ const p=programByCat(bid).by; for(const k in p) by[k]=(by[k]||0)+p[k]; });
   h+='<section class="blk"><h2 class="h">Program by category</h2><p class="scope">'+(ov?'Whole campus':esc(BDEF[state.sel].name))+'</p><div class="lgl">';
+  // each row: the swatch, which opens the colour panel, then the button that isolates the category
   for(const k in CATS){
-    const a=by[k]||0;
-    h+='<button type="button" class="lg'+(state.isolate===k?' on':'')+(a?'':' zero')+'" data-cat="'+k+'"><i style="background:'+CATS[k].color+'"></i><span>'+esc(CATS[k].name)+'</span><em>'+(a?fk(a):'–')+'</em></button>';
+    const a=by[k]||0, c=CATS[k];
+    h+='<div class="lg'+(state.isolate===k?' on':'')+(a?'':' zero')+'">'+
+       '<button type="button" class="sw" data-catcolor="'+k+'" aria-haspopup="dialog" aria-expanded="'+(state.picking==='cat:'+k)+'" title="Change colour" aria-label="'+esc(c.name)+' colour"><i style="background:'+c.color+'"></i></button>'+
+       '<button type="button" data-cat="'+k+'"><span>'+esc(c.name)+'</span><em>'+(a?fk(a):'–')+'</em></button></div>';
   }
-  h+='</div></section>';
+  h+='</div><button type="button" class="link" data-act="resetcolors"'+(colorsEdited()?'':' hidden')+' title="Go back to the colours of the loaded program">Reset colours</button></section>';
   leftEl.innerHTML=h;
 }
 const FOLD='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 12.2 10 7.8l4.5 4.4"/></svg>';
@@ -90,6 +93,8 @@ export function renderRight(){
        '<label for="area">Area (SF)</label><div class="step"><button type="button" data-act="dec" aria-label="Decrease area">−</button>'+
        '<input id="area" type="number" step="500" min="500" max="500000" value="'+dd.a+'"><button type="button" data-act="inc" aria-label="Increase area">+</button></div>'+
        '<label for="lvl">'+(tray?'Place in '+esc(def.name):'Level')+'</label><select id="lvl">'+opts+'</select>'+
+       '<label for="dcol">Colour</label><button type="button" class="cfield" id="dcol" aria-haspopup="dialog" aria-expanded="'+(state.picking==='dept:'+sd)+'">'+
+       '<i style="background:'+deptColor(sd)+'"></i><span>'+deptColor(sd).toUpperCase()+'</span><em>'+(dd.color?'Custom':'Category colour')+'</em></button>'+
        (dd.notes?'<p class="dnotes">'+esc(dd.notes)+'</p>':'')+
        '<p class="note">'+Math.round(dd.a/plate*100)+'% of a '+fmt(plate)+' SF floor plate</p></section>';
   } else {
