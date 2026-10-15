@@ -1,27 +1,27 @@
 Proprietary License
 
-Copyright (c) 2026 Hongyu Li. All rights reserved.
+Copyright (c) 2026 Hongyu Li and Zining Cheng. All rights reserved.
 
 This repository and everything in it, including source code, documentation,
 designs, data, templates and test materials (the "Software"), is the
-proprietary and confidential property of Hongyu Li (the "Owner").
+proprietary and confidential property of Hongyu Li and Zining Cheng
+(together, the "Owners").
 
 1. No license without written permission.
    No right to use, copy, modify, merge, publish, distribute, sublicense,
    sell, host, deploy or create derivative works of the Software, in whole
    or in part, is granted, by implication, estoppel or otherwise, except
-   by a separate written agreement signed by the Owner (a "Written
-   Permission"). The Owner may grant, refuse or attach conditions to any
-   Written Permission at the Owner's sole discretion, with or without
-   charge.
+   by a separate written agreement signed by both Owners (a "Written
+   Permission"). The Owners may grant, refuse or attach conditions to any
+   Written Permission at their sole discretion, with or without charge.
 
 2. Evaluation.
-   If the Owner has given you access to the Software, you may view it and
-   run it internally, solely to decide whether to request a Written
-   Permission. This lasts for the period the Owner set, or 30 days from
+   If the Owners have given you access to the Software, you may view it
+   and run it internally, solely to decide whether to request a Written
+   Permission. This lasts for the period the Owners set, or 30 days from
    your first access if no period was set. Evaluation does not allow
    production or operational use, use in work for clients, or any of the
-   acts listed in section 3. The Owner may end evaluation access at any
+   acts listed in section 3. The Owners may end evaluation access at any
    time by notice.
 
 3. Restrictions.
@@ -36,14 +36,15 @@ proprietary and confidential property of Hongyu Li (the "Owner").
    (e) remove or alter this notice or any copyright notice.
 
 4. Confidentiality.
-   The Software is confidential information of the Owner. You must protect
-   it with at least reasonable care, share it only with your own employees
-   who need it for the evaluation and are bound by confidentiality duties
-   at least as strict as these, and not disclose it to anyone else.
+   The Software is confidential information of the Owners. You must
+   protect it with at least reasonable care, share it only with your own
+   employees who need it for the evaluation and are bound by
+   confidentiality duties at least as strict as these, and not disclose it
+   to anyone else.
 
 5. Ownership.
-   The Owner keeps all right, title and interest in the Software. The
-   Owner may use any feedback or suggestions you give about the Software
+   The Owners keep all right, title and interest in the Software. The
+   Owners may use any feedback or suggestions you give about the Software
    without restriction or obligation.
 
 6. Termination.
@@ -54,7 +55,7 @@ proprietary and confidential property of Hongyu Li (the "Owner").
 7. No warranty; no liability.
    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
    OR IMPLIED, INCLUDING THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-   PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE OWNER BE
+   PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE OWNERS BE
    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR
    IN CONNECTION WITH THE SOFTWARE OR ITS USE.
 
@@ -63,4 +64,5 @@ proprietary and confidential property of Hongyu Li (the "Owner").
    package-lock.json) remain under their own licenses. This notice does
    not change those licenses.
 
-To request a Written Permission, contact Hongyu Li (GitHub: @hongyyu).
+To request a Written Permission, contact Hongyu Li (GitHub: @hongyyu) or
+Zining Cheng.

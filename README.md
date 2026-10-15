@@ -59,5 +59,5 @@ Files are read in the browser and never uploaded. Keep real client data out of t
 Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`, which runs `npm run build` and publishes only `dist/`. To redeploy without a new commit, run the workflow manually from the Actions tab.
 
 ## License
-Proprietary and confidential. Copyright (c) 2026 Hongyu Li. All rights reserved.
+Proprietary and confidential. Copyright (c) 2026 Hongyu Li and Zining Cheng. All rights reserved.
 No use, copying or distribution without written permission; see [LICENSE](LICENSE). Third-party packages keep their own licenses.
