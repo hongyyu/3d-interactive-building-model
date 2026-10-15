@@ -1,20 +1,23 @@
 import {PROJECT,DEPTS,BUILDINGS,setProjectData} from '../data/project.js';
-import {state,INIT_LEVELS,INIT_AREAS,initState} from '../state.js';
+import {state,INIT_LEVELS,INIT_AREAS,initState,isOverview} from '../state.js';
 import {hintEl} from '../dom.js';
 import {$,clamp} from '../util.js';
 import {B,D,setLabelHTML,clearScene,buildScene,fitSite,setLevelCount} from '../scene/scene.js';
 import {retarget,snapView,setViewRate} from '../scene/view.js';
-import {rebuildFloorTags,updateFloorTagText} from '../scene/overlay.js';
+import {rebuildFloorTags} from '../scene/overlay.js';
 import {relayout,levelOf} from '../layout/plan.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 import {renderRight,refreshUI} from './panels.js';
 
 export const HINTS={
+  campus:'Drag to orbit · scroll to zoom · right-drag to pan · click a building to focus it',
   mass:'Drag to orbit · scroll to zoom · right-drag to pan · click a building to select · drag a department to move it',
   axon:'Drag to orbit · scroll to zoom · drag a department to another level or position',
   stack:'Drag a department up or down to change level, sideways to reorder · scroll to zoom'
 };
 
+/* the hint line at the bottom of the stage follows the view mode and the overview */
+export function updateHint(){ hintEl.textContent=HINTS[isOverview()?'campus':state.mode]; }
 export function selectBuilding(bid,focus){
   if(!B[bid])return;
   const changed=state.sel!==bid;
@@ -25,21 +28,32 @@ export function selectBuilding(bid,focus){
     relayout(true);
     rebuildFloorTags();
   }
-  refreshUI(); retarget(false); setViewRate(3.2);
+  refreshUI(); updateHint(); retarget(false); setViewRate(3.2);
 }
+/* selects a department; from the campus overview this also focuses its building (or, for a tray
+   department, the building it would be placed in) */
 export function selectDept(id){
   const loc=D[id]&&D[id].b;
-  if(loc&&loc!==state.sel){ selectBuilding(loc,false); }
+  if(isOverview()||(loc&&loc!==state.sel)) selectBuilding(loc||state.sel,true);
   state.selDept=id; renderRight();
 }
+/* back to the campus overview, from any building or view mode */
+export function showCampus(){
+  state.focus='campus'; state.selDept=null;
+  if(state.mode!=='mass') setMode('mass');
+  else { retarget(false); setViewRate(3.2); }
+  refreshUI(); updateHint();
+}
+/* Axon and Section Stack always show one building, so they focus it; 3D Massing keeps the focus
+   it had, so going back from Axon returns to that building rather than the overview */
 export function setMode(m){
   const prev=state.mode;
   state.mode=m;
-  state.focus=(m==='mass')?'campus':'building';
+  if(m!=='mass') state.focus='building';
   document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===m)));
-  hintEl.textContent=HINTS[m];
+  updateHint();
   retarget(false); setViewRate(3.2);
-  if(prev!==m) updateFloorTagText();
+  if(prev!==m) refreshUI();
 }
 export function setArea(id,v){
   if(!id||!isFinite(v))return;
@@ -102,5 +116,5 @@ export function openProject(p){
   rebuildFloorTags();
   refreshUI();
   $('#ptitle').textContent=PROJECT.title; $('#psub').textContent=PROJECT.sub;
-  retarget(false); snapView();
+  updateHint(); retarget(false); snapView();
 }

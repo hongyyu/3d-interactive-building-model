@@ -1,11 +1,11 @@
 import {DEMO} from './data/demo.js';
 import {$,RM} from './util.js';
-import {stage,hintEl} from './dom.js';
+import {stage,leftEl,rightEl} from './dom.js';
 import {renderer,scene,camera} from './scene/scene.js';
-import {retarget,stepView,updateCamera,resize} from './scene/view.js';
+import {retarget,stepView,updateCamera,resize,measureInsets} from './scene/view.js';
 import {updateScene} from './scene/update.js';
 import {updateOverlay} from './scene/overlay.js';
-import {HINTS,openProject} from './ui/actions.js';
+import {openProject} from './ui/actions.js';
 import {bindControls} from './ui/controls.js';
 import {bindPointer} from './ui/pointer.js';
 import {bindLaser} from './ui/laser.js';
@@ -37,10 +37,13 @@ function boot(){
   bindWelcome();
   resize();
   openProject(DEMO);
-  hintEl.textContent=HINTS.mass;
   if('ResizeObserver' in window){
     let rt=0;
     new ResizeObserver(()=>{ resize(); clearTimeout(rt); rt=setTimeout(()=>{ retarget(true); },60); }).observe(stage);
+    // the floating panels change size with their content and hide in present mode; reframe only
+    // when that moves the free area
+    const ro=new ResizeObserver(()=>{ if(measureInsets()){ clearTimeout(rt); rt=setTimeout(()=>{ retarget(true); },60); } });
+    ro.observe(leftEl); ro.observe(rightEl);
   } else window.addEventListener('resize',()=>{ resize(); retarget(true); });
   requestAnimationFrame(frame);
 }

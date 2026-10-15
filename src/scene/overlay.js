@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import {DEPTS} from '../data/project.js';
-import {state,BDEF,drag,hoverId} from '../state.js';
+import {state,BDEF,drag,hoverId,isOverview} from '../state.js';
 import {overlay} from '../dom.js';
 import {fk} from '../util.js';
 import {S,BASE,SLAB} from './constants.js';
 import {B,D,scene,camera} from './scene.js';
-import {explode,SW,SH} from './view.js';
+import {explode,SW,SH,panelRects} from './view.js';
 import {floorStat} from '../layout/plan.js';
 
 const tmpV=new THREE.Vector3();
@@ -40,7 +40,7 @@ export function updateFloorTagText(){
    never cover each other, a building tag or a floor tag. A label that does not fit its face, or would collide,
    drops its SF line, then hides. The selected and hovered departments always show theirs, as an
    upright chip when it does not fit; the dragged one always shows as a chip, since it is lifted off
-   its floor. */
+   its floor. In the campus overview only the hovered or selected department is labelled. */
 const LBL_MAX=170, LBL_MIN=56, MAX_SLOPE=0.6, EDGE=8, LBL_GAP=3, CHIP_MAX=220, CHIP_PAD=16;
 const ctx2d=document.createElement('canvas').getContext('2d');
 let lineH=null;
@@ -84,16 +84,19 @@ function labelRegion(d,ceil,alongX,inset,o){
 }
 const regZ={x:0,y:0,t:0,m:0,span:0,c:new THREE.Vector3()}, regX={x:0,y:0,t:0,m:0,span:0,c:new THREE.Vector3()};
 const pA={x:0,y:0}, pB={x:0,y:0}, pC={x:0,y:0}, pE={x:0,y:0};
-/* x extent of each level's departments, for finding the ones whose end face shows */
-const lvLo=[], lvHi=[];
-function levelExtents(n,skip){
-  for(let f=0;f<n;f++){ lvLo[f]=Infinity; lvHi[f]=-Infinity; }
+/* x extent of each level's departments in each building, for finding the ones whose end face shows */
+const lvLo={}, lvHi={};
+function levelExtents(skip){
+  for(const bid in B){
+    const n=state.levels[bid].length, lo=lvLo[bid]||(lvLo[bid]=[]), hi=lvHi[bid]||(lvHi[bid]=[]);
+    lo.length=hi.length=n; lo.fill(Infinity); hi.fill(-Infinity);
+  }
   for(const id in D){
     const d=D[id];
-    if(d.b!==state.sel||id===skip) continue;
+    if(d.b==null||id===skip) continue;
     const p=d.mesh.position, s=d.mesh.scale;
-    if(p.x-s.x/2<lvLo[d.f]) lvLo[d.f]=p.x-s.x/2;
-    if(p.x+s.x/2>lvHi[d.f]) lvHi[d.f]=p.x+s.x/2;
+    if(p.x-s.x/2<lvLo[d.b][d.f]) lvLo[d.b][d.f]=p.x-s.x/2;
+    if(p.x+s.x/2>lvHi[d.b][d.f]) lvHi[d.b][d.f]=p.x+s.x/2;
   }
 }
 /* the department's bands in order of preference: the long face first, so labels on a building
@@ -102,8 +105,8 @@ const cands=[null,null];
 function labelRegions(d,ceil,def){
   const p=d.mesh.position, s=d.mesh.scale, W=def.w*S, cx=def.x*S;
   let inset=Infinity;
-  if(camera.position.x<p.x){ if(p.x-s.x/2<=lvLo[d.f]+1e-3) inset=p.x-s.x/2-(cx-W/2); }
-  else if(p.x+s.x/2>=lvHi[d.f]-1e-3) inset=cx+W/2-(p.x+s.x/2);
+  if(camera.position.x<p.x){ if(p.x-s.x/2<=lvLo[d.b][d.f]+1e-3) inset=p.x-s.x/2-(cx-W/2); }
+  else if(p.x+s.x/2>=lvHi[d.b][d.f]-1e-3) inset=cx+W/2-(p.x+s.x/2);
   cands[0]=labelRegion(d,ceil,true,0,regZ); cands[1]=labelRegion(d,ceil,false,inset,regX);
   return cands;
 }
@@ -172,23 +175,24 @@ function tryBand(r,w,h,tol,pad,forced){
   return forced||!collides();
 }
 function placeLabels(){
-  const ids=[];
+  const ids=[], ov=isOverview();
   for(const id in D){
     const d=D[id];
-    if(d.b!==state.sel||!state.labels||d.dim<0.5) hideLabel(d);
+    // the overview shows every building, so only the hovered or selected department is labelled
+    if(d.b==null||!(ov||d.b===state.sel)||!state.labels||d.dim<0.5||(ov&&rank(id)===3)) hideLabel(d);
     else ids.push(id);
   }
   ids.sort(byPriority);
   blockers.length=0;
-  if(state.mode==='mass') for(const bid in B){ if(bid!==state.sel&&B[bid].fade>0.5) blockers.push(...B[bid].shells); }
-  const def=BDEF[state.sel], n=state.levels[state.sel].length, pitch=def.fh*S*(1+explode);
-  levelExtents(n,drag&&drag.id);
+  if(state.mode==='mass') for(const bid in B){ if((ov||bid!==state.sel)&&B[bid].fade>0.5) blockers.push(...B[bid].shells); }
+  levelExtents(drag&&drag.id);
   for(const id of ids){
     const d=D[id], forced=rank(id)<3, lifted=rank(id)===0;
+    const def=BDEF[d.b], n=state.levels[d.b].length, pitch=def.fh*S*(1+explode);
     if(d.nw<0) measureLabel(d);
     let kind=0, w=0, h=0, m=0, r=null;
     if(!lifted) for(const c of labelRegions(d,d.f>=n-1?Infinity:BASE+(d.f+1)*pitch,def)){
-      if(!c||hidden(c.c,blockers)) continue;
+      if(!c||hidden(c.c,blockers,d.b)) continue;
       if(!r) r=c;
       const pad=d.on?LBL_GAP:LBL_GAP+3, room=c.span-8;
       const full=Math.min(LBL_MAX,Math.max(d.nw,d.aw),room), name=Math.min(LBL_MAX,d.nw,room);
@@ -209,8 +213,9 @@ function placeLabels(){
 }
 
 /* ---------- building tags ----------
-   The selected building's tag always shows and is placed before the department labels. The other
-   tags come after the labels, nearest building first. Each one hides when the point above its roof
+   Outside the campus overview the selected building's tag always shows and is placed before the
+   department labels. The other tags (all of them in the overview) come after the labels, nearest
+   building first. Each one hides when the point above its roof
    is behind another building; otherwise it tries centred over that point, then shifted left or right,
    and hides if it would still cover a tag or label already placed. A hidden tag keeps its layout
    (visibility, not display) so its size can still be measured. */
@@ -239,6 +244,9 @@ export function updateOverlay(){
   for(const bid in B){ const t=B[bid].tag; if(t.style.display==='block'){ B[bid].tw=t.offsetWidth; B[bid].th=t.offsetHeight; } }
   floorTags.forEach((el,f)=>{ if(el.style.display==='block'){ ftSize[f*2]=el.offsetWidth; ftSize[f*2+1]=el.offsetHeight; } });
   placed.length=0; others.length=0;
+  // the floating side panels are obstacles for labels and tags
+  for(const r of panelRects){ setQuad((r.x0+r.x1)/2,(r.y0+r.y1)/2,r.x1-r.x0,r.y1-r.y0,0,0); placed.push(...quad); }
+  const ov=isOverview();
   for(const bid in B){
     const R=B[bid], def=R.def, tag=R.tag;
     if(mode!=='mass'||R.fade<0.5){ tag.style.display='none'; continue; }
@@ -247,7 +255,7 @@ export function updateOverlay(){
     if(!p.ok){ tag.style.display='none'; continue; }
     tag.style.display='block';
     R.ax=p.x; R.ay=p.y; R.ay3=BASE+(n-1)*pitch+fhU+0.9;
-    if(bid===state.sel) placeTag(R,true);
+    if(bid===state.sel&&!ov) placeTag(R,true);
     else { R.dist=tagV.set(def.x*S,R.ay3,def.z*S).distanceToSquared(camera.position); others.push(R); }
   }
   const def=BDEF[state.sel], fhU=def.fh*S, pitch=fhU*(1+explode), W=def.w*S, Dp=def.d*S;
@@ -262,8 +270,11 @@ export function updateOverlay(){
   });
   placeLabels();
   if(!others.length) return;
-  tagBlockers.length=0; tagBlockers.push(...blockers,...B[state.sel].slabs);
-  for(const id in D){ const d=D[id]; if(d.b===state.sel&&d.dim>0.5) tagBlockers.push(d.mesh); }
+  tagBlockers.length=0; tagBlockers.push(...blockers);
+  if(!ov){
+    tagBlockers.push(...B[state.sel].slabs);
+    for(const id in D){ const d=D[id]; if(d.b===state.sel&&d.dim>0.5) tagBlockers.push(d.mesh); }
+  }
   others.sort((a,b)=>a.dist-b.dist);
   others.forEach(R=>placeTag(R,false));
 }
