@@ -8,7 +8,7 @@ import {stage} from '../dom.js';
    wheel still zooms, and the panels and toolbar keep working. The line is drawn on a full-window
    canvas with pointer-events:none. */
 const RED='rgb(230,32,50)';
-const HEAD=3.2;     // half width of the line at the pen tip, px
+const HEAD=2;       // half width of the line at the pen tip, px
 const TAIL=360;     // the line tapers to nothing this far behind the tip, px
 const FADE=1000;    // each point of the line shrinks away over this many ms
 // pen cursor: the red tip at (4,4) is the hotspot, the dark body points away to the lower right
