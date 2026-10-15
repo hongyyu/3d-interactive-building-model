@@ -33,8 +33,8 @@
       <button type="button" class="tool" data-act="labels" aria-pressed="true" aria-label="Labels" aria-keyshortcuts="T" data-tip="Labels — T">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 3.4h6l7 7a1.4 1.4 0 0 1 0 2l-4 4a1.4 1.4 0 0 1-2 0l-7-7z"/><circle cx="6.9" cy="6.9" r="1.2"/></svg><kbd>T</kbd>
       </button>
-      <button type="button" class="tool" data-act="laser" aria-pressed="false" aria-label="Laser pointer" aria-keyshortcuts="L" data-tip="Laser pointer — L · Alt-drag draws">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><circle class="dot" cx="10" cy="10" r="2.7"/><path d="M10 2.8v2.4M10 14.8v2.4M2.8 10h2.4M14.8 10h2.4M4.9 4.9l1.7 1.7M13.4 13.4l1.7 1.7M15.1 4.9l-1.7 1.7M6.6 13.4l-1.7 1.7"/></svg><kbd>L</kbd>
+      <button type="button" class="tool" data-act="laser" aria-pressed="false" aria-label="Laser pointer" aria-keyshortcuts="L" data-tip="Laser pointer — L · drag to point">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="10.1" y="6.9" width="4.2" height="11" rx="2.1" transform="rotate(-45 12.2 12.4)"/><circle class="dot" cx="4.6" cy="4.6" r="2.3"/></svg><kbd>L</kbd>
       </button>
       <button type="button" class="tool" data-act="present" aria-pressed="false" aria-label="Present" aria-keyshortcuts="P" data-tip="Present — P">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.8 3.4h14.4M4 3.4v8.4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3.4M10 12.8v3.8M7.4 17.4l2.6-.8 2.6.8M7 9.6l2-2 1.6 1.6L13 6.8"/></svg><kbd>P</kbd>
@@ -69,6 +69,7 @@
     <div id="overlay"></div>
     <div class="status" id="status" hidden></div>
     <div class="hint" id="hint"></div>
+    <div class="hint laser-hint">Drag to point · right-drag to pan · scroll to zoom · L or Esc to stop</div>
   </main>
   <aside class="side right" id="right"></aside>
 </div>
