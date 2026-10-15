@@ -3,6 +3,7 @@
    Sheets that are missing fall back to the current project's buildings and categories.
    SheetJS is loaded on first use, and the file never leaves the browser. */
 import {CATS,BUILDINGS} from './project.js';
+import {hexColor} from '../util.js';
 
 const PALETTE=['#e0554e','#5fb27f','#26a5a0','#5b7fe0','#eeab3d','#8d96a6','#a478d4','#d46f9d','#7a9a3a','#c98a4b'];
 const UNCATEGORIZED={name:'Uncategorized',color:'#9aa3b2'};
@@ -40,12 +41,7 @@ function num(v){
   const s=text(v).replace(/[,\s]/g,'').replace(/sf$/i,'');
   return s===''?NaN:Number(s);
 }
-function color(v){
-  const m=/^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(text(v));
-  if(!m) return null;
-  const h=m[1].length===3?m[1].replace(/./g,c=>c+c):m[1];
-  return '#'+h.toLowerCase();
-}
+function color(v){ return hexColor(text(v)); }
 
 /* rows of a sheet as {row: Excel row number, v: {field: value}}, plus the header problems */
 function readTable(XLSX,ws,kind,errors){

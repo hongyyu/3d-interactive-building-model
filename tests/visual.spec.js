@@ -338,3 +338,76 @@ test('toolbar shortcuts and menu', async ({page}) => {
   await expect(page.locator('#toolMenu')).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+test('colour panel', async ({page}) => {
+  const errors = await open(page);
+  const left = page.locator('#left'), right = page.locator('#right'), panel = page.locator('#colorPanel');
+  const hex = panel.locator('#cpHex'), reset = left.locator('[data-act=resetcolors]'), swatch = left.locator('[data-catcolor=inpt]');
+  const navy = 'rgb(31, 42, 102)';
+
+  // a category swatch opens the panel on the category's colour
+  await expect(reset).toBeHidden();
+  await swatch.click();
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('#cpTitle')).toHaveText('Inpatient Units');
+  await expect(hex).toHaveValue('#5FB27F');
+  await expect(panel.locator('#cpPalette .on')).toHaveAttribute('data-hex', '#5fb27f');
+
+  // palette, saturation/brightness area and hex field all apply at once, and the panel stays open
+  await panel.locator('#cpPalette [data-hex="#3451a8"]').click();
+  await expect(swatch.locator('i')).toHaveCSS('background-color', 'rgb(52, 81, 168)');
+  const sv = await panel.locator('#cpSV').boundingBox();
+  await page.mouse.move(sv.x + sv.width / 2, sv.y + sv.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(sv.x - 30, sv.y + sv.height + 30);  // past the bottom-left corner: black
+  await page.mouse.up();
+  await expect(hex).toHaveValue('#000000');
+  await hex.fill('#1f2a66');
+  await expect(right.locator('.pb .bar i[title^="Inpatient Units"]')).toHaveCSS('background-color', navy);
+  await expect(reset).toBeVisible();
+  await expect(panel).toBeVisible();
+  await page.mouse.move(10, 10);
+  await settle(page);
+  await expect.soft(page).toHaveScreenshot('color-panel-page.png');
+
+  // Escape closes it and returns focus to the swatch
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(swatch).toBeFocused();
+  await settle(page);
+  await stageShot(page, 'recolor-category.png');
+
+  // Reset colours brings back the loaded colours exactly
+  await reset.click();
+  await expect(reset).toBeHidden();
+  await expect(swatch.locator('i')).toHaveCSS('background-color', 'rgb(95, 178, 127)');
+  await settle(page);
+  await stageShot(page, '00-initial.png', false);
+
+  // a department's own colour overrides its category; a label on a dark colour turns white
+  await page.click('#left [data-b=tower]');
+  await page.click('#modes [data-mode=axon]');
+  await page.click('#right .chip[data-dept=icu]');
+  await right.locator('#dcol').click();
+  await expect(panel.locator('#cpKind')).toHaveText('Department colour');
+  await expect(panel.locator('#cpReset')).toBeHidden();
+  await hex.fill('#1f2a66');
+  for (const sel of ['.dhead i', '.bseg[data-dept=icu]', '.chip[data-dept=icu] i', '#dcol i']) await expect(right.locator(sel)).toHaveCSS('background-color', navy);
+  await expect(right.locator('#dcol')).toContainText('Custom');
+  await expect(panel.locator('#cpReset')).toBeVisible();
+  // a click outside closes the panel
+  await right.locator('.title').click();
+  await expect(panel).toBeHidden();
+  await settle(page);
+  await expect(page.locator('#overlay .lbl', {hasText: 'Critical Care (ICU)'})).toHaveClass('lbl inv');
+  await stageShot(page, 'recolor-dept.png');
+
+  // "Use category colour" drops it again
+  await right.locator('#dcol').click();
+  await panel.locator('#cpReset').click();
+  await expect(hex).toHaveValue('#E0554E');
+  await expect(panel.locator('#cpReset')).toBeHidden();
+  await expect(right.locator('#dcol')).toContainText('Category colour');
+  await expect(reset).toBeHidden();
+  expect(errors).toEqual([]);
+});

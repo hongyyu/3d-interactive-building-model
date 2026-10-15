@@ -150,10 +150,10 @@ function hidden(c,list,own){
 function rank(id){ return drag&&drag.id===id?0:id===state.selDept?1:id===hoverId?2:3; }
 function byPriority(a,b){ return rank(a)-rank(b)||DEPTS[b].a-DEPTS[a].a||(a<b?-1:1); }
 function hideLabel(d){ d.lbl.style.display='none'; d.on=0; }
-/* kind: 1 name only, 2 name and SF, 3 chip */
+/* kind: 1 name only, 2 name and SF, 3 chip; a label on a dark department (d.dark) is white */
 function showLabel(d,kind,x,y,w,m){
   const lbl=d.lbl;
-  if(d.lm!==kind){ d.lm=kind; lbl.className=kind===3?'lbl chip':'lbl'; lbl.lastChild.style.display=kind===1?'none':'block'; }
+  if(d.lm!==kind){ d.lm=kind; lbl.className=kind===3?'lbl chip':d.dark?'lbl inv':'lbl'; lbl.lastChild.style.display=kind===1?'none':'block'; }
   lbl.style.display='block';
   lbl.style.width=w.toFixed(0)+'px';
   lbl.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) skewY('+Math.atan(m).toFixed(4)+'rad) translate(-50%,-50%)';
