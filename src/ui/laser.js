@@ -4,13 +4,13 @@ import {stage} from '../dom.js';
 
 /* Presenter laser, after Excalidraw's. While it is on, the stage shows a laser-pen cursor, and a
    left drag on the stage draws a solid red line instead of moving the model. The line tapers to a
-   point behind the pen and shrinks away within a second, tail first. Right-drag still pans, the
+   point behind the pen and shrinks away within two seconds, tail first. Right-drag still pans, the
    wheel still zooms, and the panels and toolbar keep working. The line is drawn on a full-window
    canvas with pointer-events:none. */
 const RED='rgb(230,32,50)';
 const HEAD=2;       // half width of the line at the pen tip, px
-const TAIL=360;     // the line tapers to nothing this far behind the tip, px
-const FADE=1000;    // each point of the line shrinks away over this many ms
+const TAIL=1000;    // the line tapers to nothing this far behind the tip, px
+const FADE=2000;    // each point of the line shrinks away over this many ms
 // pen cursor: the red tip at (4,4) is the hotspot, the dark body points away to the lower right
 const PEN='<path d="M9.5 9.5 20 20" stroke="#fff" stroke-width="7" stroke-linecap="round"/>'+
   '<path d="M9.5 9.5 20 20" stroke="#141922" stroke-width="4.2" stroke-linecap="round"/>'+

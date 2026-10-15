@@ -13,7 +13,7 @@ Department volumes scale with area (SF) relative to the floor plate. Drag a depa
 - **Toolbar:** the view modes sit in the middle of the header and the tools on the right, each with its shortcut in the corner and a tooltip on hover: `1` `2` `3` switch the view, `T` labels, `L` laser, `P` present, `F` reset view. The ☰ menu holds **Import program…**, **Download template** and **Reset layout**.
 - **Start screen:** the app opens on an animated overview with two ways in, **Explore the demo** or **Import Excel program**. The icon left of the title brings it back.
 - **Levels:** **+ Add level** puts an empty level on top of the selected building. **Remove top** removes its top level and sends that level's departments to the Unassigned tray. **Reset layout** (☰ menu) restores the loaded level counts.
-- **Laser pointer:** the laser tool (or the `L` key) turns the cursor into a laser pen. Drag on the model to draw a red line that shrinks away within a second, so the room can follow along; the model stays still. Right-drag still pans and the wheel still zooms. `L` or Escape turns it off.
+- **Laser pointer:** the laser tool (or the `L` key) turns the cursor into a laser pen. Drag on the model to draw a red line that shrinks away within two seconds, so the room can follow along; the model stays still. Right-drag still pans and the wheel still zooms. `L` or Escape turns it off.
 
 ## Run
 Live at https://hongyyu.github.io/3d-interactive-building-model/
