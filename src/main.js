@@ -9,6 +9,7 @@ import {openProject} from './ui/actions.js';
 import {bindControls} from './ui/controls.js';
 import {bindPointer} from './ui/pointer.js';
 import {bindLaser} from './ui/laser.js';
+import {bindReport} from './ui/report.js';
 import {bindWelcome,welcomeOpen,closeWelcome} from './ui/welcome.js';
 
 $('#ptitle').textContent=DEMO.title; $('#psub').textContent=DEMO.sub;
@@ -35,6 +36,7 @@ function boot(){
   bindPointer();
   bindLaser();
   bindWelcome();
+  bindReport();
   resize();
   openProject(DEMO);
   if('ResizeObserver' in window){

@@ -171,7 +171,10 @@ Extensions: level labels with names from Rhino, per-level SF over/under bars in 
 
 Plus a level summary sheet: Building, Level, Program SF, Floor plate SF, Over/Under. Optionally a `.xlsx` export with both sheets via SheetJS.
 
+**Printable report (done):** "Print report (PDF)…" in the ☰ menu prints the whole project for saving as a PDF. A summary page holds the totals, a picture of the current view and the category mix. Each building then gets a page with its stacking diagram and departments by level. The picture has no labels yet, so it will use the compositor below once that exists.
+
 **Tasks**
+- [x] Printable report (browser print / Save as PDF)
 - [ ] Offscreen high-resolution render + 2D overlay compositor
 - [ ] Title block and legend in exports
 - [ ] CSV / XLSX writer

@@ -23,6 +23,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   - `stageShot()` clips stage screenshots to the free area between the floating side panels, 24px clear of their shadows. The panels' content is covered by the text snapshots and their look by the full-page shots. Canvas drags in the spec start right of the left panel.
   - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
+  - **Printed report:** prints from the ☰ menu, then checks the report text in print media (the date comes from a fixed clock), the page per building and the view picture. The stage must still match `00-initial.png` afterwards. A second print after edits must show the over-capacity level and the tray. The test fires the print events itself, because Chromium ignores repeated `print()` calls that have no user gesture.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
@@ -81,6 +82,12 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - The draw loop runs only while a line is on screen.
 - `L` toggles the laser. Escape turns it off, unless a department drag is in progress (then Escape cancels only the drag).
 
+**Printed report** (`ui/report.js`): "Print report (PDF)…" calls `window.print()`. A `beforeprint` listener rebuilds `#report` from the live state and adds `print-report` to `<html>`. While that class is set, the print stylesheet hides everything else, so the browser's own Ctrl+P / ⌘P prints the report too. The user saves it as a PDF from the print dialog.
+- Layout: a summary page (totals, a picture of the current view, buildings and categories, the tray), then one page per building (`.r-bldg`, `break-before:page`) with a stacking diagram and a department table grouped by level. It shows the whole project, whatever building is focused.
+- The picture is a 2D canvas copied from the WebGL canvas right after a render, at a pixel ratio of at least 2. It is cropped to the free area between the panels and then trimmed to the model. The HTML labels are not in it. The renderer is set back to its own pixel ratio and renders again at once, so the stage doesn't blank behind the print dialog.
+- With the start screen open, `beforeprint` removes the class and the browser prints the page as it is.
+- While printing, `document.title` names the PDF (`<title> – Program report`). `afterprint` restores it.
+
 **State** (`state.js`): `state.levels[buildingId]` and `state.unassigned` (the tray) are the source of truth for stacking. `state.levels[bid].length` is the live level count; `def.levels` is only the loaded definition, so don't read the count from it. `addLevel` and `removeTopLevel` (`ui/actions.js`) change the count; removing a level sends its departments to the tray. `setLevelCount(bid, n)` (`scene/scene.js`) creates or disposes that building's per-level shell, slab and void meshes to match. A new level starts with `R.lift[f] = 1` and drops into place. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
 
 **Shared mutable variables:** a value that is reassigned across modules is an exported `let`. Only its home module reassigns it, because ES module imports are read-only and assigning to one from another module throws.
@@ -126,7 +133,7 @@ Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and
 
 **Toolbar** (header, `index.html` + `ui/controls.js`): two Excalidraw-style islands, `#modes` (view modes) and `#tools`. Each `.tool` is an icon button with a `<kbd>` shortcut hint and a CSS tooltip from `data-tip`.
 - The islands are 38px tall but take 32px of layout (`margin-block:-3px`), so the header keeps the height of the brand block. A taller header would shrink the stage and change every stage screenshot.
-- Import program…, Download template and Reset layout live in the ☰ menu (`#toolMenu`); `menuAction()` in the spec opens it. Its keyboard handling and outside-click closing are in `bindToolbarUI()`.
+- Import program…, Download template, Print report (PDF)… and Reset layout live in the ☰ menu (`#toolMenu`); `menuAction()` in the spec opens it. Its keyboard handling and outside-click closing are in `bindToolbarUI()`.
 - Single-key shortcuts are in the `KEYS` map in `ui/controls.js`. `L` (laser) stays in `ui/laser.js`. Shortcuts are ignored with a modifier key, while typing in a field, while a dialog is open, and while the start screen covers the app.
 - A tool's tooltip is hidden after it is clicked (class `tipoff`) until the pointer leaves it, so it doesn't sit over the stage.
 

@@ -56,6 +56,7 @@ button,input,select{font:inherit;color:inherit}
 .menu [role=menuitem]:hover,.menu [role=menuitem]:focus-visible{background:var(--tool-hover);outline:none}
 .menu svg{flex:none;width:17px;height:17px;fill:none;stroke:var(--ink-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .menu hr{width:100%;margin:5px 0;border:0;border-top:1px solid var(--line)}
+.menu kbd{margin-left:auto;padding-left:16px;font:400 10.5px/1 var(--mono);color:var(--ink-3)}
 .btn{border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:7px 10px;font:500 12px/1 var(--ui);cursor:pointer}
 .btn:hover{background:#f3f5f8}
 @media (max-width:999px){ .tool.wide{width:32px;padding:0} .tool.wide span{display:none} }
@@ -245,3 +246,52 @@ a.btn{display:inline-block;text-decoration:none;color:var(--ink)}
   .app.present .side{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* printed report (ui/report.js): hidden on screen. While printing, html.print-report hides
+   everything else, so the PDF holds only the report. */
+.report{display:none}
+@media print{
+  @page{margin:14mm 14mm 16mm}
+  html.print-report,html.print-report body{height:auto;background:#fff}
+  html.print-report body>:not(#report){display:none!important}
+  html.print-report .report{display:block}
+}
+.report{color:var(--ink);font:400 8pt/1.35 var(--ui);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.r-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding-bottom:10px;border-bottom:1.5px solid var(--ink)}
+.r-head h1{margin:0;font:700 19pt/1.15 var(--ui);text-wrap:balance}
+.r-head>p{flex:none;margin:0}
+.r-eyebrow{margin:0 0 4px;font:500 7.5pt/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.r-sub{margin:3px 0 0;font:400 8pt/1.3 var(--mono);color:var(--ink-3)}
+.r-sec{margin-top:14px}
+.r-h{margin:0 0 6px;font:500 7.5pt/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);break-after:avoid}
+.r-title{margin:0 0 10px;font:700 15pt/1.2 var(--ui);break-after:avoid}
+.r-note{margin:-2px 0 6px;font:400 7.5pt/1.4 var(--mono);color:var(--ink-3)}
+.r-bldg{break-before:page;margin-top:0}
+.r-kv{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 16px}
+.r-kv dt{font:500 6.5pt/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.r-kv dd{margin:2px 0 0;font:500 9pt/1.3 var(--mono)}
+.r-over{color:var(--alert)}
+.r-fig{margin:12px 0 0;border:1px solid var(--line);border-radius:4px;overflow:hidden;break-inside:avoid}
+.r-fig canvas{display:block;width:100%;height:auto;max-height:85mm;object-fit:contain}
+.r-fig figcaption{padding:5px 8px;border-top:1px solid var(--line);font:400 7pt/1.3 var(--mono);color:var(--ink-3)}
+.r-sw{display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:1.5px;vertical-align:.5px}
+.r-tbl{width:100%;border-collapse:collapse}
+.r-tbl th,.r-tbl td{padding:2px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:baseline;font-weight:400}
+.r-tbl thead th{font:500 6.5pt/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);border-bottom-color:var(--ink)}
+.r-tbl .num{text-align:right;font-family:var(--mono);white-space:nowrap}
+.r-tbl tr,.r-tbl tbody{break-inside:avoid}
+.r-tbl tfoot th,.r-tbl tfoot td{font-weight:600;border-top:1px solid var(--ink);border-bottom:0}
+.r-tbl th span{margin-left:8px;font:400 7.5pt var(--mono);color:var(--ink-3)}
+.r-lvrow th,.r-lvrow td{padding-top:4px;background:var(--panel);font-weight:600}
+.r-lvrow.r-over th span,.r-lvrow.r-over td{color:var(--alert)}
+.r-stack{display:flex;flex-direction:column;gap:3px;margin:12px 0 14px;break-inside:avoid}
+.r-lv{display:grid;grid-template-columns:24px minmax(0,1fr) 92px;align-items:center;gap:8px}
+.r-lv>b{font:600 8pt/1 var(--ui)}
+.r-lv>em{font:400 7pt/1 var(--mono);font-style:normal;color:var(--ink-2);text-align:right;white-space:nowrap}
+.r-lv.over>em{color:var(--alert);font-weight:500}
+.r-bar{display:flex;height:24px;border:1px solid var(--line-2);border-radius:2px;overflow:hidden;background:repeating-linear-gradient(135deg,#eef0f4 0 4px,#f7f8fa 4px 8px)}
+.r-lv.over .r-bar{border-color:var(--alert)}
+.r-bar span{flex:none;display:flex;flex-direction:column;justify-content:center;min-width:0;padding:0 4px;border-right:1px solid #fff;overflow:hidden;white-space:nowrap;color:#10151d}
+.r-bar b,.r-bar i{overflow:hidden;text-overflow:ellipsis}
+.r-bar b{font:600 6.5pt/1.2 var(--ui)}
+.r-bar i{font:400 6pt/1.2 var(--mono);font-style:normal;opacity:.8}
+.r-foot{margin:18px 0 0;padding-top:8px;border-top:1px solid var(--line);font:400 7pt/1.4 var(--mono);color:var(--ink-3)}

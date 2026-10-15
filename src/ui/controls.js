@@ -7,6 +7,7 @@ import {renderLeft,renderRight} from './panels.js';
 import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,removeTopLevel,showCampus} from './actions.js';
 import {bindImport,chooseImportFile,loadDemo} from './importDialog.js';
 import {toggleLaser} from './laser.js';
+import {printReport} from './report.js';
 
 /* panel, overlay and toolbar clicks */
 export function bindControls(){
@@ -48,6 +49,7 @@ export function bindControls(){
     else if(a==='resetview') resetView();
     else if(a==='resetlayout') resetLayout();
     else if(a==='import') chooseImportFile();
+    else if(a==='print') printReport();
     else if(a==='laser') toggleLaser();
     else if(a==='present') togglePresent();
   });

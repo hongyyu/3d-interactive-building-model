@@ -55,6 +55,9 @@
           <a role="menuitem" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4v9.2M6.6 9.2 10 12.6l3.4-3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Download template
           </a>
+          <button type="button" role="menuitem" data-act="print" title="Every building, level and department on printable pages. Choose Save as PDF in the print dialog.">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 7.4v-4h8v4M6 14H4.8a1.4 1.4 0 0 1-1.4-1.4V8.8a1.4 1.4 0 0 1 1.4-1.4h10.4a1.4 1.4 0 0 1 1.4 1.4v3.8a1.4 1.4 0 0 1-1.4 1.4H14M6 11.6h8v5H6z"/></svg>Print report (PDF)…<kbd id="printKey">Ctrl+P</kbd>
+          </button>
           <hr>
           <button type="button" role="menuitem" data-act="resetlayout" title="Put every department back where the loaded program had it">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.8 4.2v3.6h3.6"/><path d="M4.3 7.6A6.2 6.2 0 1 1 4.6 13"/></svg>Reset layout
@@ -99,6 +102,7 @@
   </div>
 </section>
 <canvas class="laser" id="laser" hidden aria-hidden="true"></canvas>
+<article class="report" id="report"></article>
 <dialog class="dlg" id="importDlg" aria-labelledby="importTitle">
   <form method="dialog">
     <div class="dlg-body" id="importBody"></div>
