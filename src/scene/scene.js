@@ -93,17 +93,27 @@ export function setLevelCount(bid,n){
   [R.plans,R.voidT,R.voidV].forEach(a=>{ if(a.length>n) a.length=n; });
 }
 function makeDept(id){
-  const base=new THREE.Color(deptColor(id));
-  const mat=new THREE.MeshLambertMaterial({color:base.clone()});
+  const mat=new THREE.MeshLambertMaterial();
   const mesh=new THREE.Mesh(boxGeo,mat);
   mesh.castShadow=true; mesh.receiveShadow=true; mesh.userData={t:'dept',id:id};
   const ed=new THREE.LineSegments(edgeGeo,edgeMat); mesh.add(ed);
   scene.add(mesh);
   const lbl=document.createElement('div'); lbl.className='lbl'; overlay.appendChild(lbl);
-  const d={id:id,mesh:mesh,ed:ed,mat:mat,base:base,lbl:lbl,vx:0,vf:0,vw:1,tx:0,tf:0,tw:1,b:null,f:0,dim:1,lw:-1,lm:-1,on:0,nw:-1,aw:0};
-  setLabelHTML(d);
+  const d={id:id,mesh:mesh,ed:ed,mat:mat,base:new THREE.Color(),dark:false,lbl:lbl,vx:0,vf:0,vw:1,tx:0,tf:0,tw:1,b:null,f:0,dim:1,lw:-1,lm:-1,on:0,nw:-1,aw:0};
+  paint(d); setLabelHTML(d);
   return d;
 }
+/* Below this relative luminance a label reads better in white than in the dark ink. The demo's
+   darkest colour is 0.23, so the demo keeps dark labels. */
+const DARK=0.18, lin=new THREE.Color();
+function paint(d){
+  d.base.set(deptColor(d.id)); d.mat.color.copy(d.base);
+  lin.copySRGBToLinear(d.base);
+  d.dark=0.2126*lin.r+0.7152*lin.g+0.0722*lin.b<DARK;
+  d.lm=-1;
+}
+/* re-applies every department's colour after a category or department colour changes */
+export function paintDepts(){ for(const id in D) paint(D[id]); }
 export function setLabelHTML(d){
   const dd=DEPTS[d.id];
   d.lbl.innerHTML='<b>'+esc(dd.n)+'</b><span>'+fmt(dd.a)+' SF</span>';

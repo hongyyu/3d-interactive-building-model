@@ -1,8 +1,8 @@
-import {PROJECT,DEPTS,BUILDINGS,setProjectData} from '../data/project.js';
-import {state,INIT_LEVELS,INIT_AREAS,initState,isOverview} from '../state.js';
+import {PROJECT,CATS,DEPTS,BUILDINGS,setProjectData} from '../data/project.js';
+import {state,INIT_LEVELS,INIT_AREAS,INIT_CAT_COLORS,INIT_DEPT_COLORS,initState,isOverview} from '../state.js';
 import {hintEl} from '../dom.js';
 import {$,clamp} from '../util.js';
-import {B,D,setLabelHTML,clearScene,buildScene,fitSite,setLevelCount} from '../scene/scene.js';
+import {B,D,setLabelHTML,clearScene,buildScene,fitSite,setLevelCount,paintDepts} from '../scene/scene.js';
 import {retarget,snapView,setViewRate} from '../scene/view.js';
 import {rebuildFloorTags} from '../scene/overlay.js';
 import {relayout,levelOf} from '../layout/plan.js';
@@ -106,6 +106,28 @@ export function resetLayout(){
   if(resized) rebuildFloorTags();
   refreshUI();
   if(resized){ retarget(true); setViewRate(3.2); }
+}
+/* The colour panel (ui/colorPanel.js) calls these on every change, so the model follows the drag */
+const HEX=/^#[0-9a-f]{6}$/i;
+export function setCatColor(k,v){
+  if(!CATS[k]||!HEX.test(v))return;
+  CATS[k].color=v.toLowerCase(); paintDepts(); refreshUI();
+}
+/* gives department id its own colour, which overrides its category colour */
+export function setDeptColor(id,v){
+  if(!DEPTS[id]||!HEX.test(v))return;
+  DEPTS[id].color=v.toLowerCase(); paintDepts(); refreshUI();
+}
+/* drops department id's own colour, so it follows its category again */
+export function useCatColor(id){
+  if(!DEPTS[id])return;
+  delete DEPTS[id].color; paintDepts(); refreshUI();
+}
+/* back to the colours of the loaded project; the layout is kept */
+export function resetColors(){
+  for(const k in INIT_CAT_COLORS) CATS[k].color=INIT_CAT_COLORS[k];
+  for(const k in INIT_DEPT_COLORS){ if(INIT_DEPT_COLORS[k]) DEPTS[k].color=INIT_DEPT_COLORS[k]; else delete DEPTS[k].color; }
+  paintDepts(); refreshUI();
 }
 /* replaces the whole project (demo or imported) and rebuilds the scene from it */
 export function openProject(p){

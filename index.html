@@ -77,6 +77,20 @@
   <aside class="side right" id="right"></aside>
 </div>
 <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+<dialog class="cpanel" id="colorPanel" aria-labelledby="cpTitle" tabindex="-1">
+  <div class="cphead">
+    <div><p class="eyebrow" id="cpKind"></p><h2 class="cptitle" id="cpTitle"></h2></div>
+    <button type="button" class="x" data-cp="close" aria-label="Close">×</button>
+  </div>
+  <div class="cpsv" id="cpSV" tabindex="0" role="slider" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+  <input type="range" class="cphue" id="cpHue" min="0" max="359" aria-label="Hue">
+  <div class="cphex"><i></i><label for="cpHex">Hex</label><input type="text" id="cpHex" maxlength="7" spellcheck="false" autocomplete="off"></div>
+  <p class="cph">Palette</p>
+  <div class="cpgrid" id="cpPalette"></div>
+  <p class="cph">In this project</p>
+  <div class="cpgrid" id="cpProject"></div>
+  <button type="button" class="cpreset" id="cpReset" hidden><i></i>Use category colour</button>
+</dialog>
 <section class="welcome" id="welcome" aria-labelledby="wTitle">
   <div class="wgrid">
     <div class="wcopy">

@@ -91,10 +91,24 @@ button,input,select{font:inherit;color:inherit}
 .meter i{display:block;height:100%;background:var(--ink)}
 .link{margin-top:8px;background:none;border:0;padding:0;color:var(--ink-2);font:500 12px var(--ui);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .lgl{display:flex;flex-direction:column;gap:2px}
-.lg{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;border-radius:6px;padding:5px 6px;text-align:left;cursor:pointer}
+.lg{display:flex;align-items:center;border-radius:6px}
 .lg:hover{background:#eff1f5}
 .lg.on{background:#e6e9ef}
-.lg i{width:11px;height:11px;border-radius:3px;flex:none}
+.lg button{flex:none;display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:6px;padding:5px 6px 5px 2px;text-align:left;cursor:pointer}
+.lg button[data-cat]{flex:1;min-width:0}
+/* the legend swatch opens the colour panel; its 6px padding puts the 11px swatch where the row's
+   padding and gap would */
+.lg .sw{width:23px;height:23px;padding:6px}
+.lg .sw i{display:block;width:11px;height:11px;border-radius:3px}
+.lg .sw:hover i{box-shadow:0 0 0 2px #fff,0 0 0 3px var(--line-2)}
+.lg .sw[aria-expanded="true"] i{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--ink)}
+/* the department card's colour field, drawn like the level select */
+.cfield{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line-2);border-radius:6px;padding:7px 9px;background:#fff;text-align:left;cursor:pointer}
+.cfield:hover{background:#f3f5f8}
+.cfield[aria-expanded="true"]{border-color:var(--ink)}
+.cfield i{width:16px;height:16px;border-radius:4px;flex:none;box-shadow:inset 0 0 0 1px rgba(20,25,34,.1)}
+.cfield span{font:500 13px var(--mono)}
+.cfield em{margin-left:auto;font:400 10.5px var(--mono);font-style:normal;color:var(--ink-3)}
 .lg span{flex:1;min-width:0;font-size:12px}
 .lg em{font:400 10.5px var(--mono);font-style:normal;color:var(--ink-3)}
 .lg.zero{opacity:.45}
@@ -137,6 +151,35 @@ button,input,select{font:inherit;color:inherit}
 .lbl{position:absolute;left:0;top:0;transform-origin:0 0;display:none;text-align:center;color:#10151d;overflow:hidden;white-space:nowrap}
 .lbl b{display:block;font:600 11px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis}
 .lbl span{display:block;font:400 10px/1.2 var(--mono);opacity:.78}
+.lbl.inv{color:#fff}
+/* colour panel: a non-modal dialog beside the side panel; --hue and --cur are set by ui/colorPanel.js */
+.cpanel{position:fixed;inset:auto;left:0;top:0;z-index:25;margin:0;width:256px;max-height:calc(100vh - 16px);overflow:auto;padding:12px 12px 14px;border:0;border-radius:12px;background:#fff;color:var(--ink);box-shadow:var(--menu-shadow);display:flex;flex-direction:column;gap:10px}
+.cpanel:not([open]){display:none}
+.cpanel:focus{outline:none}
+.cphead{display:flex;align-items:flex-start;gap:8px}
+.cphead>div{flex:1;min-width:0}
+.cphead .eyebrow{margin-bottom:2px}
+.cptitle{margin:0;font:600 14px/1.25 var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpsv{position:relative;height:132px;border-radius:8px;cursor:crosshair;touch-action:none;
+  background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),hsl(var(--hue,0) 100% 50%)}
+.cpsv i{position:absolute;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);background:var(--cur);border:2px solid #fff;box-shadow:0 0 0 1px rgba(20,25,34,.35),0 1px 4px rgba(20,25,34,.3);pointer-events:none}
+.cpsv:focus-visible i{box-shadow:0 0 0 2px var(--ink),0 1px 4px rgba(20,25,34,.3)}
+.cphue{-webkit-appearance:none;appearance:none;width:100%;height:12px;margin:2px 0;border-radius:6px;cursor:pointer;
+  background:linear-gradient(90deg,#f00,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00)}
+.cphue::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:hsl(var(--hue,0) 100% 50%);border:2px solid #fff;box-shadow:0 0 0 1px rgba(20,25,34,.35),0 1px 3px rgba(20,25,34,.3)}
+.cphue::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:hsl(var(--hue,0) 100% 50%);border:2px solid #fff;box-shadow:0 0 0 1px rgba(20,25,34,.35),0 1px 3px rgba(20,25,34,.3)}
+.cphex{display:flex;align-items:center;gap:8px}
+.cphex i{width:30px;height:30px;border-radius:6px;flex:none;background:var(--cur);box-shadow:inset 0 0 0 1px rgba(20,25,34,.1)}
+.cphex label{font:500 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.cphex input{flex:1;min-width:0;border:1px solid var(--line-2);border-radius:6px;padding:6px 8px;background:#fff;font:500 13px var(--mono);text-transform:uppercase}
+.cph{margin:2px 0 -4px;font:500 10px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.cpgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.cpgrid button{aspect-ratio:1;padding:0;border:0;border-radius:4px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(20,25,34,.08)}
+.cpgrid button:hover{transform:scale(1.12)}
+.cpgrid button.on{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--ink)}
+.cpreset{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line-2);border-radius:6px;padding:7px 9px;background:#fff;font:500 12px var(--ui);text-align:left;cursor:pointer}
+.cpreset:hover{background:#f3f5f8}
+.cpreset i{width:12px;height:12px;border-radius:3px;flex:none}
 .lbl.chip{background:#fff;border:1px solid var(--line-2);border-radius:5px;padding:3px 7px;box-shadow:0 4px 12px rgba(20,25,35,.12)}
 .btag{position:absolute;left:0;top:0;display:none;pointer-events:auto;cursor:pointer;background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:5px 8px;white-space:nowrap;font:600 11.5px/1.2 var(--ui);color:var(--ink);box-shadow:0 4px 12px rgba(20,25,35,.08)}
 .btag small{display:block;font:400 10px/1.3 var(--mono);color:var(--ink-3)}

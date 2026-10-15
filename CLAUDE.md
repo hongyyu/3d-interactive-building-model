@@ -25,6 +25,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Printed report:** prints from the ☰ menu, then checks the report text in print media (the date comes from a fixed clock), the page per building and the view picture. The stage must still match `00-initial.png` afterwards. A second print after edits must show the over-capacity level and the tray. The test fires the print events itself, because Chromium ignores repeated `print()` calls that have no user gesture.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
+  - **Colour panel:** recolours a category from the palette, the saturation/brightness area and the hex field, then a department, and checks Escape, outside clicks and "Use category colour". One full-page shot shows the open panel. After "Reset colours" the stage must match `00-initial.png`.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
 
@@ -129,6 +130,15 @@ Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and
 - Building tags follow the same rules. The selected building's tag is placed first and always shows. Other tags are placed after the department labels, nearest first. They hide when the point above their roof is behind another building. Otherwise each tries centred, then shifted left or right, then hides (class `off`, which uses `visibility` so the tag can still be measured).
 - The selected and hovered departments fall back to an upright `.chip` when their label doesn't fit. The dragged department always shows as a chip.
 - Text widths are measured with a canvas and cached per label (`d.nw`, `d.aw`). Call `setLabelHTML(d)` after changing a department's name or area so they are measured again.
+
+**Colours** (`ui/colorPanel.js`): the swatches in "Program by category" (`data-catcolor`) and the department card's Colour field (`#dcol`) open the colour panel `#colorPanel`. It has a saturation/brightness area, a hue slider, a hex field, a fixed palette, the project's own colours, and for a department "Use category colour".
+- It is a non-modal `<dialog>` (`show()`), placed beside the side panel that holds the swatch, or above or below the swatch in the one-column layout. Single-key shortcuts are off while it is open, because they skip keys while any dialog is open.
+- Every change applies at once through `setCatColor` / `setDeptColor` (`ui/actions.js`). They change `CATS` / `DEPTS` in place, call `paintDepts()` (`scene/scene.js`) to re-apply every department's colour, then `refreshUI()`.
+- The panel sits outside the side panels, so their rebuilds leave it open. It finds its swatch again by selector (`cur.sel`), and `state.picking` lets the panels render that swatch as expanded.
+- Escape (caught in the capture phase before the laser's listener) and the close button return focus to the swatch. A press outside closes it, and the swatch that opened it toggles it.
+- "Reset colours" shows only when `colorsEdited()` and restores `INIT_CAT_COLORS` / `INIT_DEPT_COLORS` from `initState()`. "Reset layout" leaves colours alone.
+- A department darker than relative luminance 0.18 gets white label text (class `inv`). The demo's darkest colour is 0.23, so the demo keeps dark labels.
+- `hexColor()` (`util.js`) parses hex codes for both the panel and the importer.
 
 **Panels** (`ui/panels.js`): `renderLeft()` and `renderRight()` rebuild their `innerHTML` from strings. Pass every program or user string through `esc()`. Clicks are handled in `ui/controls.js` by delegated listeners on `#left`, `#right`, `#overlay`, `#modes` and `#tools`, keyed off `data-b`, `data-dept`, `data-cat`, `data-act` and `data-mode` attributes. New controls should follow the same pattern.
 
