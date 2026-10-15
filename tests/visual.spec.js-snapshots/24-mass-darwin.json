@@ -37,7 +37,7 @@
   "lbl|block|Primary Care12,000 SF",
   "lbl|none|Retail Pharmacy2,500 SF",
   "lbl|none|Café & Gathering2,500 SF",
-  "lbl|none|Oncology Infusion30,000 SF",
+  "lbl|block|Oncology Infusion30,000 SF",
   "lbl|block|Radiation Oncology7,000 SF",
   "lbl|none|Cardiology Clinic9,000 SF",
   "lbl|block|Orthopedics9,500 SF",
