@@ -70,33 +70,45 @@ export function moveDeptToLevel(id,f){
   relayout(false); refreshUI();
 }
 /* after a building's level count changes: rebuild its level meshes and floor tags, then reframe
-   the camera so the new height fits */
-function levelCountChanged(bid){
-  setLevelCount(bid,state.levels[bid].length);
+   the camera so the new height fits; with drop, a level added on top drops into place */
+function levelCountChanged(bid,drop){
+  setLevelCount(bid,state.levels[bid].length,drop);
   relayout(false);
   if(bid===state.sel) rebuildFloorTags();
   refreshUI(); retarget(true); setViewRate(3.2);
 }
-/* adds an empty level on top of building bid */
-export function addLevel(bid){
+/* inserts an empty level into building bid at level index f (0 makes it the new Level 1); the
+   levels from f up move up one */
+export function insertLevel(bid,f){
   const lv=state.levels[bid];
   if(!lv||lv.length>=MAX_LEVELS)return;
-  lv.push([]);
-  levelCountChanged(bid);
+  f=clamp(f,0,lv.length);
+  lv.splice(f,0,[]);
+  levelCountChanged(bid,f===lv.length-1);
 }
-/* removes the top level of building bid; its departments go to the Unassigned tray */
-export function removeTopLevel(bid){
+/* adds an empty level on top of building bid */
+export function addLevel(bid){ if(state.levels[bid]) insertLevel(bid,state.levels[bid].length); }
+/* removes level f of building bid; its departments go to the Unassigned tray and the levels
+   above move down */
+export function removeLevel(bid,f){
   const lv=state.levels[bid];
-  if(!lv||lv.length<=1)return;
-  lv.pop().forEach(id=>state.unassigned.push(id));
-  levelCountChanged(bid);
+  if(!lv||lv.length<=1||f<0||f>=lv.length)return;
+  lv.splice(f,1)[0].forEach(id=>state.unassigned.push(id));
+  levelCountChanged(bid,false);
+}
+/* moves level `from` of building bid to index `to`; the levels between shift by one */
+export function moveLevel(bid,from,to){
+  const lv=state.levels[bid];
+  if(!lv||from===to||to<0||to>=lv.length)return;
+  lv.splice(to,0,lv.splice(from,1)[0]);
+  relayout(false); refreshUI();
 }
 export function resetLayout(){
   const init=JSON.parse(INIT_LEVELS);
   let resized=false;
   init.levels.forEach((lv,i)=>{
     const bid=BUILDINGS[i].id;
-    if(state.levels[bid].length!==lv.length){ resized=true; setLevelCount(bid,lv.length); }
+    if(state.levels[bid].length!==lv.length){ resized=true; setLevelCount(bid,lv.length,true); }
     state.levels[bid]=lv;
   });
   state.unassigned=init.unassigned;

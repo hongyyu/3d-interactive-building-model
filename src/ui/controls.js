@@ -4,9 +4,11 @@ import {leftEl,rightEl,overlay} from '../dom.js';
 import {$} from '../util.js';
 import {retarget,setViewRate} from '../scene/view.js';
 import {renderLeft,renderRight} from './panels.js';
-import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,removeTopLevel,showCampus} from './actions.js';
+import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,showCampus} from './actions.js';
 import {bindImport,chooseImportFile,loadDemo} from './importDialog.js';
 import {toggleLaser} from './laser.js';
+import {menuKeys} from './menu.js';
+import {bindLevels} from './levels.js';
 
 /* panel, overlay and toolbar clicks */
 export function bindControls(){
@@ -26,7 +28,7 @@ export function bindControls(){
     else if(a==='inc'&&id) setArea(id,DEPTS[id].a+500);
     else if(a==='dec'&&id) setArea(id,DEPTS[id].a-500);
     else if(a==='addlevel') addLevel(state.sel);
-    else if(a==='rmlevel') removeTopLevel(state.sel);
+    else if(a==='fold'){ state.panelOpen=!state.panelOpen; renderRight(); rightEl.querySelector('[data-act=fold]').focus(); }
   });
   rightEl.addEventListener('change',e=>{
     if(e.target.id==='area') setArea(state.selDept,parseFloat(e.target.value));
@@ -52,6 +54,7 @@ export function bindControls(){
     else if(a==='present') togglePresent();
   });
   bindToolbarUI();
+  bindLevels();
 }
 
 function toggleLabels(){
@@ -84,12 +87,7 @@ function bindToolbarUI(){
   });
   document.addEventListener('pointerdown',e=>{ if(!menu.hidden&&!e.target.closest('.menuwrap')) setMenu(false); });
   menuBtn.addEventListener('keydown',e=>{ if(e.key==='ArrowDown'){ e.preventDefault(); setMenu(true,true); } });
-  menu.addEventListener('keydown',e=>{
-    const items=[...menu.querySelectorAll('[role=menuitem]')], i=items.indexOf(document.activeElement);
-    if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); items[(i+(e.key==='ArrowDown'?1:items.length-1))%items.length].focus(); }
-    else if(e.key==='Home'||e.key==='End'){ e.preventDefault(); items[e.key==='Home'?0:items.length-1].focus(); }
-    else if(e.key==='Tab') setMenu(false);
-  });
+  menu.addEventListener('keydown',e=>{ if(!menuKeys(menu,e)&&e.key==='Tab') setMenu(false); });
   window.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); setMenu(false); menuBtn.focus(); return; }
     if(e.ctrlKey||e.metaKey||e.altKey||e.repeat||$('#app').inert||document.querySelector('dialog[open]')) return;

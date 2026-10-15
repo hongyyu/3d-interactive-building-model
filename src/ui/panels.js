@@ -39,6 +39,15 @@ export function renderLeft(){
   h+='</div></section>';
   leftEl.innerHTML=h;
 }
+const FOLD='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 12.2 10 7.8l4.5 4.4"/></svg>';
+const GRIP='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5.5" r="1.3"/><circle cx="12.5" cy="5.5" r="1.3"/><circle cx="7.5" cy="10" r="1.3"/><circle cx="12.5" cy="10" r="1.3"/><circle cx="7.5" cy="14.5" r="1.3"/><circle cx="12.5" cy="14.5" r="1.3"/></svg>';
+const MORE='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="15" cy="10" r="1.4"/></svg>';
+/* the right panel's title row, with the button that hides everything below it (state.panelOpen) */
+function panelHead(eyebrow,title){
+  const open=state.panelOpen, tip=open?'Hide details':'Show details';
+  return '<div class="phead"><div><p class="eyebrow">'+eyebrow+'</p><h2 class="title">'+title+'</h2></div>'+
+    '<button type="button" class="pfold" data-act="fold" aria-expanded="'+open+'" aria-label="'+tip+'" title="'+tip+'">'+FOLD+'</button></div>';
+}
 /* the right panel in the campus overview: totals, the tray, and each building's program mix */
 function renderCampus(){
   let gsf=0, prog=0, nl=0, rows='';
@@ -49,7 +58,8 @@ function renderCampus(){
     for(const k in CATS){ const a=p.by[k]; if(a) bar+='<i style="width:'+(a/Math.max(g,p.total)*100).toFixed(2)+'%;background:'+CATS[k].color+'" title="'+esc(CATS[k].name)+' · '+fmt(a)+' SF"></i>'; }
     rows+='<button type="button" class="pb" data-b="'+def.id+'"><span class="lh"><b>'+esc(def.name)+'</b><span>'+fmt(p.total)+' / '+fmt(g)+' SF</span></span><span class="bar">'+bar+'</span></button>';
   });
-  let h='<section class="blk"><p class="eyebrow">Campus overview</p><h2 class="title">All buildings</h2>'+
+  if(!state.panelOpen){ rightEl.innerHTML='<section class="blk">'+panelHead('Campus overview','All buildings')+'</section>'; return; }
+  let h='<section class="blk">'+panelHead('Campus overview','All buildings')+
     '<dl class="kv"><div><dt>Buildings</dt><dd>'+BUILDINGS.length+'</dd></div><div><dt>Levels</dt><dd>'+nl+'</dd></div>'+
     '<div><dt>Gross area</dt><dd>'+fmt(gsf)+' SF</dd></div><div><dt>Program</dt><dd>'+fmt(prog)+' SF · '+Math.round(prog/gsf*100)+'%</dd></div></dl></section>'+
     '<p class="note">Click a building in the model or the list to focus it and edit its stacking.</p>';
@@ -66,7 +76,8 @@ export function renderRight(){
   const bid=state.sel, def=BDEF[bid], lv=state.levels[bid], n=lv.length, plate=def.w*def.d;
   let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
   const gsf=plate*n, pct=Math.round(prog/gsf*100);
-  let h='<section class="blk"><p class="eyebrow">Selected building</p><h2 class="title">'+esc(def.name)+'</h2>'+
+  if(!state.panelOpen){ rightEl.innerHTML='<section class="blk">'+panelHead('Selected building',esc(def.name))+'</section>'; return; }
+  let h='<section class="blk">'+panelHead('Selected building',esc(def.name))+
     '<dl class="kv"><div><dt>Levels</dt><dd>'+n+'</dd></div><div><dt>Floor plate</dt><dd>'+fmt(plate)+' SF</dd></div>'+
     '<div><dt>Gross area</dt><dd>'+fmt(gsf)+' SF</dd></div><div><dt>Program</dt><dd>'+fmt(prog)+' SF · '+pct+'%</dd></div></dl></section>';
   const sd=state.selDept, loc=sd?levelOf(bid,sd):null, tray=sd!=null&&state.unassigned.includes(sd);
@@ -89,11 +100,10 @@ export function renderRight(){
        '<p class="note">Select a department, then pick a level to place it in '+esc(def.name)+'.</p>'+
        '<div class="chips">'+state.unassigned.map(id=>chip(id,sd===id)).join('')+'</div></section>';
   }
-  const topIds=lv[n-1];
-  h+='<section class="blk"><div class="lvhead"><h2 class="h">Levels</h2><span class="lvbtns">'+
-     '<button type="button" class="mini" data-act="rmlevel"'+(n>1?'':' disabled')+' title="Remove Level '+n+(topIds.length?'; its departments move to Unassigned':'')+'">− Remove top</button>'+
+  // each level row: a grip to drag it to another level, and a menu to insert a level next to it or remove it
+  h+='<section class="blk"><div class="lvhead"><h2 class="h">Levels</h2>'+
      '<button type="button" class="mini" data-act="addlevel"'+(n<MAX_LEVELS?'':' disabled')+' title="Add an empty Level '+(n+1)+' on top of '+esc(def.name)+'">+ Add level</button>'+
-     '</span></div><div class="lvls">';
+     '</div><div class="lvls">';
   for(let f=n-1;f>=0;f--){
     const st=floorStat(bid,f), den=Math.max(st.plate,st.total);
     let bar='', chips='';
@@ -102,7 +112,10 @@ export function renderRight(){
       bar+='<button type="button" class="bseg'+(on?' on':'')+'" data-dept="'+id+'" style="width:'+(dd.a/den*100).toFixed(2)+'%;background:'+c+'" title="'+esc(dd.n)+'" aria-label="'+esc(dd.n)+'"></button>';
       chips+=chip(id,on);
     });
-    h+='<div class="lvl'+(st.over?' over':'')+'"><div class="lh"><b>Level '+(f+1)+'</b><span>'+fmt(st.total)+' / '+fmt(st.plate)+' SF'+(st.over?' · over':'')+'</span></div>'+
+    h+='<div class="lvl'+(st.over?' over':'')+'" data-f="'+f+'"><div class="lh">'+
+       '<button type="button" class="grip" data-f="'+f+'" aria-label="Move Level '+(f+1)+'" title="Drag to move this level, or use the arrow keys">'+GRIP+'</button>'+
+       '<b>Level '+(f+1)+'</b><span>'+fmt(st.total)+' / '+fmt(st.plate)+' SF'+(st.over?' · over':'')+'</span>'+
+       '<button type="button" class="lvmore" data-act="lvlmenu" data-f="'+f+'" aria-label="Level '+(f+1)+' actions" aria-haspopup="menu" aria-expanded="false" aria-controls="levelMenu">'+MORE+'</button></div>'+
        '<div class="bar">'+bar+'</div>'+(chips?'<div class="chips">'+chips+'</div>':'<p class="note lvempty">Empty level</p>')+'</div>';
   }
   h+='</div></section>';

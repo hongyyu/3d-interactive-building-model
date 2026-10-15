@@ -3,7 +3,7 @@ import {DEPTS,BUILDINGS,UNASSIGNED} from './data/project.js';
 /* state.levels[bid] and state.unassigned are the live stacking; INIT_* snapshot the loaded project for "Reset layout" */
 export const BDEF={}, INIT_AREAS={};
 export let INIT_LEVELS='';
-export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,isolate:null,levels:{},unassigned:[]};
+export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,isolate:null,levels:{},unassigned:[],panelOpen:true};
 
 /* Campus overview: 3D Massing with no building focused. Every building shows its departments and
    none is highlighted; state.sel still names the building Axon, Section Stack and the tray use. */
@@ -26,3 +26,7 @@ export function initState(){
 export let drag=null, hoverId=null;
 export function setDrag(d){ drag=d; }
 export function setHoverId(id){ hoverId=id; }
+/* departments glowing in the model because their level row is hovered or dragged in the right
+   panel; only ui/levels.js changes it */
+export let hotIds=null;
+export function setHotIds(ids){ hotIds=ids; }
