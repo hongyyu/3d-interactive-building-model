@@ -5,7 +5,7 @@ import {overlay} from '../dom.js';
 import {fk} from '../util.js';
 import {S,BASE,SLAB} from './constants.js';
 import {B,D,scene,camera} from './scene.js';
-import {explode,SW,SH,panelRects} from './view.js';
+import {explode,SW,SH,panelRects,insetL,insetR} from './view.js';
 import {floorStat} from '../layout/plan.js';
 
 const tmpV=new THREE.Vector3();
@@ -34,11 +34,14 @@ export function updateFloorTagText(){
 }
 /* ---------- department labels ----------
    A label sits on the part of its department the camera can see: the face toward the camera plus the
-   strip of top face that the level above leaves uncovered (all of it on the top level). It is sheared
-   to run along the floor edges, like lettering on the facade, so it fits the slanted band of its own
-   floor. Labels are placed in priority order (dragged, selected, hovered, then larger SF first) and
-   never cover each other, a building tag or a floor tag. A label that does not fit its face, or would collide,
-   drops its SF line, then hides. The selected and hovered departments always show theirs, as an
+   strip of top face that the level above leaves uncovered. The top level counts the same strip, as
+   if a level sat above it, so every label sits on its own floor's facade band and they line up; only
+   a top-level department with no facade in view (seen end-on) is labelled on its roof. It
+   is sheared to run along the floor edges, like lettering on the facade, so it fits the slanted band
+   of its own floor. Labels are placed in priority order (dragged, selected, hovered, then larger SF
+   first) and never cover each other, a building tag or a floor tag. 3D Massing shows names only;
+   Axon and Section Stack add the SF line, and a label that does not fit its face, or would collide,
+   drops it first. Then it hides. The selected and hovered departments always show theirs, as an
    upright chip when it does not fit; the dragged one always shows as a chip, since it is lifted off
    its floor. In the campus overview only the hovered or selected department is labelled. */
 const LBL_MAX=170, LBL_MIN=56, MAX_SLOPE=0.6, EDGE=8, LBL_GAP=3, CHIP_MAX=220, CHIP_PAD=16;
@@ -57,7 +60,8 @@ function measureLabel(d){
 /* Screen region of the visible part of a department, as a band whose long edges run along the floor:
    centre, vertical thickness t, slope m of the long edges (screen dy/dx), horizontal span, and the
    3D centre c. The band is the side face toward the camera plus the strip of top face it can see
-   past the level above; `ceil` is the underside of that level, Infinity on the top level.
+   past the level above; `ceil` is the underside of that level (or where it would be), or Infinity for
+   the whole top face.
    alongX: the side face is the long one (normal along z), otherwise the end one (normal along x).
    An end face is only visible on the first or last department of a level, `inset` from the plate
    edge (a void box may sit between); `inset` is Infinity for the others. */
@@ -100,14 +104,16 @@ function levelExtents(skip){
   }
 }
 /* the department's bands in order of preference: the long face first, so labels on a building
-   read the same way, then the end face (null where not visible) */
+   read the same way, then the end face (null where not visible). A top-level department with
+   neither in view (seen end-on, only its roof shows) falls back to its roof. */
 const cands=[null,null];
-function labelRegions(d,ceil,def){
+function labelRegions(d,ceil,def,top){
   const p=d.mesh.position, s=d.mesh.scale, W=def.w*S, cx=def.x*S;
   let inset=Infinity;
   if(camera.position.x<p.x){ if(p.x-s.x/2<=lvLo[d.b][d.f]+1e-3) inset=p.x-s.x/2-(cx-W/2); }
   else if(p.x+s.x/2>=lvHi[d.b][d.f]-1e-3) inset=cx+W/2-(p.x+s.x/2);
   cands[0]=labelRegion(d,ceil,true,0,regZ); cands[1]=labelRegion(d,ceil,false,inset,regX);
+  if(top&&!cands[0]&&!cands[1]){ cands[0]=labelRegion(d,Infinity,false,Infinity,regX); cands[1]=labelRegion(d,Infinity,true,Infinity,regZ); }
   return cands;
 }
 /* Placed labels and tags, as screen quads of 8 numbers (4 corners in order). A label is a
@@ -150,10 +156,10 @@ function hidden(c,list,own){
 function rank(id){ return drag&&drag.id===id?0:id===state.selDept?1:id===hoverId?2:3; }
 function byPriority(a,b){ return rank(a)-rank(b)||DEPTS[b].a-DEPTS[a].a||(a<b?-1:1); }
 function hideLabel(d){ d.lbl.style.display='none'; d.on=0; }
-/* kind: 1 name only, 2 name and SF, 3 chip */
+/* kind: 1 name only, 2 name and SF, 3 chip with SF, 4 chip with the name only */
 function showLabel(d,kind,x,y,w,m){
   const lbl=d.lbl;
-  if(d.lm!==kind){ d.lm=kind; lbl.className=kind===3?'lbl chip':'lbl'; lbl.lastChild.style.display=kind===1?'none':'block'; }
+  if(d.lm!==kind){ d.lm=kind; lbl.className=kind>=3?'lbl chip':'lbl'; lbl.lastChild.style.display=kind===1||kind===4?'none':'block'; }
   lbl.style.display='block';
   lbl.style.width=w.toFixed(0)+'px';
   lbl.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) skewY('+Math.atan(m).toFixed(4)+'rad) translate(-50%,-50%)';
@@ -186,24 +192,25 @@ function placeLabels(){
   blockers.length=0;
   if(state.mode==='mass') for(const bid in B){ if((ov||bid!==state.sel)&&B[bid].fade>0.5) blockers.push(...B[bid].shells); }
   levelExtents(drag&&drag.id);
+  const sf=state.mode!=='mass';
   for(const id of ids){
     const d=D[id], forced=rank(id)<3, lifted=rank(id)===0;
     const def=BDEF[d.b], n=state.levels[d.b].length, pitch=def.fh*S*(1+explode);
     if(d.nw<0) measureLabel(d);
     let kind=0, w=0, h=0, m=0, r=null;
-    if(!lifted) for(const c of labelRegions(d,d.f>=n-1?Infinity:BASE+(d.f+1)*pitch,def)){
+    if(!lifted) for(const c of labelRegions(d,BASE+(d.f+1)*pitch,def,d.f===n-1)){
       if(!c||hidden(c.c,blockers,d.b)) continue;
       if(!r) r=c;
       const pad=d.on?LBL_GAP:LBL_GAP+3, room=c.span-8;
       const full=Math.min(LBL_MAX,Math.max(d.nw,d.aw),room), name=Math.min(LBL_MAX,d.nw,room);
       m=c.m;
-      if(full>=d.aw&&full>=Math.min(d.nw,LBL_MIN)&&tryBand(c,full,lineH[0]+lineH[1],d.on===2?4:0,pad,forced)){ kind=2; w=full; h=lineH[0]+lineH[1]; }
+      if(sf&&full>=d.aw&&full>=Math.min(d.nw,LBL_MIN)&&tryBand(c,full,lineH[0]+lineH[1],d.on===2?4:0,pad,forced)){ kind=2; w=full; h=lineH[0]+lineH[1]; }
       else if(name>=Math.min(d.nw,LBL_MIN)&&tryBand(c,name,lineH[0],d.on===1?4:0,pad,forced)){ kind=1; w=name; h=lineH[0]; }
       if(kind) break;
     }
     if(!kind&&forced){
       const c=r||toScreen(d.mesh.position.x,d.mesh.position.y,d.mesh.position.z);
-      if(r||c.ok){ kind=3; lx=c.x; ly=c.y; m=0; w=Math.min(CHIP_MAX,Math.max(d.nw,d.aw))+CHIP_PAD; h=lineH[0]+lineH[1]+CHIP_PAD/2; }
+      if(r||c.ok){ kind=sf?3:4; lx=c.x; ly=c.y; m=0; w=Math.min(CHIP_MAX,sf?Math.max(d.nw,d.aw):d.nw)+CHIP_PAD; h=lineH[0]+(sf?lineH[1]:0)+CHIP_PAD/2; }
     }
     if(!kind||lx+w/2<0||lx-w/2>SW||ly+h/2<0||ly-h/2>SH){ hideLabel(d); continue; }
     setQuad(lx,ly,w,h,m,0);
@@ -220,9 +227,15 @@ function placeLabels(){
    and hides if it would still cover a tag or label already placed. A hidden tag keeps its layout
    (visibility, not display) so its size can still be measured. */
 const tagV=new THREE.Vector3(), others=[], tagBlockers=[];
-const TAG_SHIFT=[0,-0.4,0.4];
+const TAG_SHIFT=[0,-0.4,0.4], TAG_LIFT=8, tq={x:0,y:0};
 function placeTag(R,forced){
   let ok=forced, dx=0;
+  // the selected building's tag stays in the free area, pinned to its top edge when the building's
+  // top is out of view
+  if(forced&&R.tw){
+    R.ax=Math.min(Math.max(R.ax,insetL+EDGE+R.tw/2),SW-insetR-EDGE-R.tw/2);
+    R.ay=Math.max(R.ay,EDGE+R.th);
+  }
   if(!forced&&R.tw){
     tagV.set(R.def.x*S,R.ay3,R.def.z*S);
     if(!hidden(tagV,tagBlockers,R.def.id)) for(const k of TAG_SHIFT){
@@ -251,10 +264,15 @@ export function updateOverlay(){
     const R=B[bid], def=R.def, tag=R.tag;
     if(mode!=='mass'||R.fade<0.5){ tag.style.display='none'; continue; }
     const n=state.levels[bid].length, fhU=def.fh*S, pitch=fhU*(1+explode);
-    const p=toScreen(def.x*S,BASE+(n-1)*pitch+fhU+0.9,def.z*S);
-    if(!p.ok){ tag.style.display='none'; continue; }
+    const top=BASE+(n-1)*pitch+fhU, cx=def.x*S, cz=def.z*S, hw=def.w*S/2, hd=def.d*S/2;
+    // the tag sits just above the building's outline on screen (its highest roof corner), centred
+    // over the roof, so it never covers the building itself
+    const p=toScreen(cx,top,cz);
+    let ok=p.ok, y=p.y;
+    for(let i=0;i<4;i++){ ok=project(cx+(i&1?hw:-hw),top,cz+(i&2?hd:-hd),tq)&&ok; if(tq.y<y) y=tq.y; }
+    if(!ok){ tag.style.display='none'; continue; }
     tag.style.display='block';
-    R.ax=p.x; R.ay=p.y; R.ay3=BASE+(n-1)*pitch+fhU+0.9;
+    R.ax=p.x; R.ay=y-TAG_LIFT; R.ay3=top+0.9;
     if(bid===state.sel&&!ov) placeTag(R,true);
     else { R.dist=tagV.set(def.x*S,R.ay3,def.z*S).distanceToSquared(camera.position); others.push(R); }
   }
