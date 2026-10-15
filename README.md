@@ -53,7 +53,11 @@ npm run preview   # serve dist/ locally
 
 Departments without a building or level wait in the **Unassigned** tray in the right panel. Select one and pick a level to place it in the selected building. **Reset layout** returns to the imported layout, and **Load demo project** (left panel) brings back the demo.
 
-Files are read in the browser and never uploaded. The repo and the site are public, so keep real client data out of the repo; the bundled demo (`src/data/demo.js`) must stay fictional.
+Files are read in the browser and never uploaded. Keep real client data out of the repo; the bundled demo (`src/data/demo.js`) must stay fictional.
 
 ## Deployment
 Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`, which runs `npm run build` and publishes only `dist/`. To redeploy without a new commit, run the workflow manually from the Actions tab.
+
+## License
+Proprietary and confidential. Copyright (c) 2026 Hongyu Li. All rights reserved.
+No use, copying or distribution without written permission; see [LICENSE](LICENSE). Third-party packages keep their own licenses.
