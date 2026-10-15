@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {DEPTS} from '../data/project.js';
-import {state,BDEF,drag,setDrag,setHoverId} from '../state.js';
+import {state,BDEF,drag,setDrag,setHoverId,isOverview} from '../state.js';
 import {canvas,statusEl} from '../dom.js';
 import {clamp,fmt} from '../util.js';
 import {S,SLAB,CLEAR,BASE} from '../scene/constants.js';
@@ -19,9 +19,9 @@ function setNdc(cx,cy){
 }
 function pick(cx,cy){
   setNdc(cx,cy); ray.setFromCamera(ndc,camera);
-  const list=[];
-  for(const id in D){ const d=D[id]; if(d.b===state.sel&&d.dim>0.5) list.push(d.mesh); }
-  if(state.mode==='mass'){ for(const bid in B){ if(bid!==state.sel&&B[bid].fade>0.5) B[bid].shells.forEach(s=>list.push(s)); } }
+  const list=[], ov=isOverview();
+  for(const id in D){ const d=D[id]; if(d.b!=null&&(ov||d.b===state.sel)&&d.dim>0.5) list.push(d.mesh); }
+  if(state.mode==='mass'&&!ov){ for(const bid in B){ if(bid!==state.sel&&B[bid].fade>0.5) B[bid].shells.forEach(s=>list.push(s)); } }
   const hits=ray.intersectObjects(list,false);
   if(!hits.length) return null;
   const u=hits[0].object.userData;
@@ -91,7 +91,9 @@ export function bindPointer(){
       return;
     }
     const hit=(e.button===0)?pick(e.clientX,e.clientY):null;
-    if(hit&&hit.type==='dept'){ gesture={type:'dept',id:hit.id,sx:e.clientX,sy:e.clientY}; selectDept(hit.id); }
+    // in the campus overview a department stands for its building: a click focuses it, a drag orbits
+    if(hit&&hit.type==='dept'&&isOverview()){ gesture={type:'shell',id:D[hit.id].b,dept:hit.id,sx:e.clientX,sy:e.clientY}; }
+    else if(hit&&hit.type==='dept'){ gesture={type:'dept',id:hit.id,sx:e.clientX,sy:e.clientY}; selectDept(hit.id); }
     else if(hit&&hit.type==='shell'){ gesture={type:'shell',id:hit.id,sx:e.clientX,sy:e.clientY}; }
     else gesture={type:(e.button===2||e.shiftKey||state.mode==='stack')?'pan':'orbit',lx:e.clientX,ly:e.clientY,moved:false};
   });
@@ -102,7 +104,7 @@ export function bindPointer(){
       if(e.pointerType==='touch')return;
       const h=pick(e.clientX,e.clientY);
       setHoverId((h&&h.type==='dept')?h.id:null);
-      canvas.style.cursor=h?(h.type==='dept'?'grab':'pointer'):'';
+      canvas.style.cursor=h?(h.type==='dept'&&!isOverview()?'grab':'pointer'):'';
       return;
     }
     if(g.type==='pinch'){
@@ -141,7 +143,7 @@ export function bindPointer(){
       if(g.type==='pinch'){ if(pts.size<2) gesture=null; }
       else if(pts.size===0){
         if(g.type==='dept'){ if(drag) commitDrag(); }
-        else if(g.type==='shell'){ selectBuilding(g.id,true); }
+        else if(g.type==='shell'){ if(g.dept) selectDept(g.dept); else selectBuilding(g.id,true); }
         else if(!g.moved&&state.selDept){ state.selDept=null; renderRight(); }
         gesture=null;
       }

@@ -5,6 +5,10 @@ export const BDEF={}, INIT_AREAS={};
 export let INIT_LEVELS='';
 export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,isolate:null,levels:{},unassigned:[]};
 
+/* Campus overview: 3D Massing with no building focused. Every building shows its departments and
+   none is highlighted; state.sel still names the building Axon, Section Stack and the tray use. */
+export function isOverview(){ return state.mode==='mass'&&state.focus==='campus'; }
+
 /* resets selection and stacking to the freshly loaded project; the view mode and labels are kept */
 export function initState(){
   for(const k in BDEF) delete BDEF[k];

@@ -19,7 +19,8 @@ npm run test:visual:update   # re-record baselines after an intended change
 There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 
 - **Visual test** (`tests/visual.spec.js`): builds the app and serves `dist/` on :4174.
-  - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of `#stage`. Three steps also get full-page shots.
+  - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of the stage. Three steps also get full-page shots.
+  - `stageShot()` clips stage screenshots to the free area between the floating side panels, 24px clear of their shadows. The panels' content is covered by the text snapshots and their look by the full-page shots. Canvas drags in the spec start right of the left panel.
   - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
@@ -103,7 +104,14 @@ Mutating properties (for example `drag.ov = …` or `viewT.s = …`) works from 
 - `GRIDOP` sets grid opacity.
 - `targetView()` sets the camera.
 
-Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and 3.2°) and a large camera distance, not from an OrthographicCamera. Only the selected building (`state.sel`) shows department meshes. The other buildings render as plain shells and fade out outside `mass` mode.
+Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and 3.2°) and a large camera distance, not from an OrthographicCamera. Only the selected building (`state.sel`) shows department meshes, except in the campus overview. The other buildings render as plain shells and fade out outside `mass` mode.
+
+**Campus overview** (`isOverview()` in `state.js`: `mass` mode with `state.focus === 'campus'`): the demo and every imported project open here.
+- Every building shows its department meshes and no building tag is highlighted. `state.sel` still names a building: the one Axon, Section Stack and the Unassigned tray use.
+- Only the hovered or selected department gets a label. Hovering a department also glows its whole building.
+- A click on a department, a building tag or a card focuses that building (`state.focus = 'building'`). A click on a department also selects it, and dragging orbits instead of moving departments.
+- The right panel shows campus totals, the tray and "Program by building". "Program by category" in the left panel covers the whole campus.
+- `showCampus()` (the "Full campus" card) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Section Stack and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
 
 **Dragging** (`ui/pointer.js`): while a drag is in progress, `drag.ov` holds a preview placement `{b, id, f, idx}`. `levelsWithOverride()` applies it during layout without changing `state.levels`. `commitDrag()` writes it to `state.levels`, and `cancelDrag()` (also bound to Escape) discards it. The drag plane is vertical and faces the camera, and the target level comes from the Y position.
 
@@ -124,4 +132,8 @@ Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and
 
 **Input** (`ui/pointer.js`): camera controls are custom pointer handling (there is no OrbitControls). A small `gesture` state machine handles orbit, pan (right-drag, Shift, or any drag in stack mode), two-finger pinch, wheel zoom, and click-vs-drag on departments and building shells. The click/drag threshold is 5 px.
 
-**Styling** (`src/style.css`): design tokens are CSS custom properties on `:root` (`--ink*`, `--line*`, `--alert`, `--ui`, `--mono`). The layout is a three-column grid that collapses to one column below 960px. `.app.present` hides both side panels.
+**Styling** (`src/style.css`): design tokens are CSS custom properties on `:root` (`--ink*`, `--line*`, `--alert`, `--ui`, `--mono`). The stage fills the area under the header, and the side panels float over it as frosted bubbles (`backdrop-filter`) in the outer grid columns. Below 960px the layout is one column, with solid panels stacked under the stage. `.app.present` hides both side panels.
+- `measureInsets()` (`scene/view.js`) records how far the panels reach into the stage (`insetL` / `insetR`, also set as `--inset-l` / `--inset-r` on `#stage`) and their rects (`panelRects`).
+- `updateCamera()` uses `setViewOffset` to put the projection centre in the middle of the free area, and `targetView()` fits to its aspect. The status bar and hint are positioned with the CSS variables.
+- The overlay treats `panelRects` as obstacles, so labels and tags stay off the panels.
+- A ResizeObserver on each panel re-measures and reframes only when an inset changes, because the panels also resize whenever their content does.

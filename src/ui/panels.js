@@ -1,5 +1,5 @@
 import {PROJECT,CATS,DEPTS,BUILDINGS,deptColor} from '../data/project.js';
-import {state,BDEF} from '../state.js';
+import {state,BDEF,isOverview} from '../state.js';
 import {leftEl,rightEl} from '../dom.js';
 import {esc,fmt,fk} from '../util.js';
 import {B} from '../scene/scene.js';
@@ -7,26 +7,62 @@ import {updateFloorTagText} from '../scene/overlay.js';
 import {floorStat,levelOf} from '../layout/plan.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 
+/* program SF of building bid by category key */
+function programByCat(bid){
+  const by={}; let total=0;
+  state.levels[bid].forEach(lv=>lv.forEach(id=>{ const d=DEPTS[id]; by[d.c]=(by[d.c]||0)+d.a; total+=d.a; }));
+  return {by:by,total:total};
+}
+const CAMPUS_ICON='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.6 16.8h14.8M4 16.8V7.2l4-2v11.6M8 8.4l4.2-1.8v10.2M12.2 10.4l3.8 1.4v5"/></svg>';
 export function renderLeft(){
-  let h='<section class="blk"><h2 class="h">Buildings</h2><div class="blist">';
+  const ov=isOverview();
+  let all=0; BUILDINGS.forEach(def=>{ all+=def.w*def.d*state.levels[def.id].length; });
+  let h='<section class="blk"><h2 class="h">Buildings</h2><div class="blist">'+
+    '<button type="button" class="bcard campus'+(ov?' on':'')+'" data-act="campus" aria-pressed="'+ov+'">'+CAMPUS_ICON+
+    '<span><span class="bn">Full campus</span><span class="bm">'+BUILDINGS.length+' buildings · '+fk(all)+' GSF</span></span></button>';
   BUILDINGS.forEach(def=>{
     const lv=state.levels[def.id], plate=def.w*def.d, gsf=plate*lv.length;
     let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
     const pct=Math.min(100,Math.round(prog/gsf*100));
-    h+='<button type="button" class="bcard'+(def.id===state.sel?' on':'')+'" data-b="'+def.id+'"><span class="bn">'+esc(def.name)+'</span>'+
+    h+='<button type="button" class="bcard'+(!ov&&def.id===state.sel?' on':'')+'" data-b="'+def.id+'"><span class="bn">'+esc(def.name)+'</span>'+
        '<span class="bm">'+lv.length+' levels · '+fmt(gsf)+' GSF</span><span class="meter"><i style="width:'+pct+'%"></i></span></button>';
   });
-  h+='</div><button type="button" class="link" data-act="campus">Show full campus</button>'+
-     (PROJECT.demo?'':'<button type="button" class="link" data-act="demo">Load demo project</button>')+'</section>';
-  h+='<section class="blk"><h2 class="h">Program by category</h2><div class="lgl">';
+  h+='</div>'+(PROJECT.demo?'':'<button type="button" class="link" data-act="demo">Load demo project</button>')+'</section>';
+  // the whole campus in the overview, otherwise the focused building
+  const scope=ov?BUILDINGS.map(b=>b.id):[state.sel], by={};
+  scope.forEach(bid=>{ const p=programByCat(bid).by; for(const k in p) by[k]=(by[k]||0)+p[k]; });
+  h+='<section class="blk"><h2 class="h">Program by category</h2><p class="scope">'+(ov?'Whole campus':esc(BDEF[state.sel].name))+'</p><div class="lgl">';
   for(const k in CATS){
-    let a=0; state.levels[state.sel].forEach(lv=>lv.forEach(id=>{ if(DEPTS[id].c===k)a+=DEPTS[id].a; }));
+    const a=by[k]||0;
     h+='<button type="button" class="lg'+(state.isolate===k?' on':'')+(a?'':' zero')+'" data-cat="'+k+'"><i style="background:'+CATS[k].color+'"></i><span>'+esc(CATS[k].name)+'</span><em>'+(a?fk(a):'–')+'</em></button>';
   }
   h+='</div></section>';
   leftEl.innerHTML=h;
 }
+/* the right panel in the campus overview: totals, the tray, and each building's program mix */
+function renderCampus(){
+  let gsf=0, prog=0, nl=0, rows='';
+  BUILDINGS.forEach(def=>{
+    const n=state.levels[def.id].length, g=def.w*def.d*n, p=programByCat(def.id);
+    gsf+=g; prog+=p.total; nl+=n;
+    let bar='';
+    for(const k in CATS){ const a=p.by[k]; if(a) bar+='<i style="width:'+(a/Math.max(g,p.total)*100).toFixed(2)+'%;background:'+CATS[k].color+'" title="'+esc(CATS[k].name)+' · '+fmt(a)+' SF"></i>'; }
+    rows+='<button type="button" class="pb" data-b="'+def.id+'"><span class="lh"><b>'+esc(def.name)+'</b><span>'+fmt(p.total)+' / '+fmt(g)+' SF</span></span><span class="bar">'+bar+'</span></button>';
+  });
+  let h='<section class="blk"><p class="eyebrow">Campus overview</p><h2 class="title">All buildings</h2>'+
+    '<dl class="kv"><div><dt>Buildings</dt><dd>'+BUILDINGS.length+'</dd></div><div><dt>Levels</dt><dd>'+nl+'</dd></div>'+
+    '<div><dt>Gross area</dt><dd>'+fmt(gsf)+' SF</dd></div><div><dt>Program</dt><dd>'+fmt(prog)+' SF · '+Math.round(prog/gsf*100)+'%</dd></div></dl></section>'+
+    '<p class="note">Click a building in the model or the list to focus it and edit its stacking.</p>';
+  if(state.unassigned.length){
+    h+='<section class="blk"><h2 class="h">Unassigned · '+state.unassigned.length+'</h2>'+
+       '<p class="note">Select a department to place it in '+esc(BDEF[state.sel].name)+', or focus another building first.</p>'+
+       '<div class="chips">'+state.unassigned.map(id=>chip(id,false)).join('')+'</div></section>';
+  }
+  h+='<section class="blk"><h2 class="h">Program by building</h2><div class="pbl">'+rows+'</div></section>';
+  rightEl.innerHTML=h;
+}
 export function renderRight(){
+  if(isOverview()){ renderCampus(); return; }
   const bid=state.sel, def=BDEF[bid], lv=state.levels[bid], n=lv.length, plate=def.w*def.d;
   let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
   const gsf=plate*n, pct=Math.round(prog/gsf*100);
@@ -81,6 +117,6 @@ function updateTags(){
   for(const bid in B){
     const def=BDEF[bid], lv=state.levels[bid], gsf=def.w*def.d*lv.length, tag=B[bid].tag;
     tag.innerHTML=esc(def.name)+'<small>'+lv.length+' levels · '+fk(gsf)+' GSF</small>';
-    tag.classList.toggle('on',bid===state.sel);
+    tag.classList.toggle('on',bid===state.sel&&!isOverview());
   }
 }

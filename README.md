@@ -3,6 +3,7 @@
 Interactive massing diagram for presenting a medical campus program to clients. Built with Vite and Three.js r128.
 
 ## Views
+- **Campus overview**: the demo and imported projects open on the whole campus, with every building's departments in colour and a campus summary on the right. Click a building, its tag or its card to focus it; **Full campus** (top of the Buildings list) comes back here.
 - **3D Massing**: perspective master plan; click a building to select it
 - **Axon**: exploded near-orthographic axonometric of the selected building
 - **Section Stack**: elevation stacking diagram, level by level
