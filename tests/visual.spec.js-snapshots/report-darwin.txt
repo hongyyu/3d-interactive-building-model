@@ -1,0 +1,274 @@
+PROGRAM & STACKING REPORT
+
+3D Interactive Building Model
+
+Fictional demo campus · placeholder figures
+
+March 2, 2026
+
+BUILDINGS
+4
+LEVELS
+18
+GROSS AREA
+456,600 SF
+PROGRAM
+376,000 SF · 82%
+DEPARTMENTS
+36
+OVER CAPACITY
+None
+Current view · 3D Massing · Full campus
+BUILDINGS
+BUILDING	FLOOR PLATE	FLOOR-TO-FLOOR	LEVELS	GROSS SF	PROGRAM SF	FILL	OVER CAPACITY
+Hospital Tower	200 × 120 ft	17 ft	8	192,000	168,500	88%	–
+Diagnostic & Treatment	300 × 160 ft	17 ft	3	144,000	104,000	72%	–
+Outpatient Pavilion	180 × 110 ft	15 ft	5	99,000	85,000	86%	–
+Central Utility Plant	120 × 90 ft	20 ft	2	21,600	18,500	86%	–
+Campus	18	456,600	376,000	82%	–
+PROGRAM BY CATEGORY
+CATEGORY	DEPARTMENTS	PROGRAM SF	SHARE
+Emergency & Critical Care	3	37,000	10%
+Inpatient Units	4	71,000	19%
+Procedural & Surgical	5	61,000	16%
+Diagnostic & Imaging	6	67,000	18%
+Ambulatory & Clinics	7	67,000	18%
+Support & Plant	6	26,500	7%
+Public & Admin	5	46,500	12%
+Total	36	376,000	100%
+
+BUILDING 1 OF 4
+
+Hospital Tower
+FLOOR PLATE
+200 × 120 ft · 24,000 SF
+FLOOR-TO-FLOOR
+17 ft
+LEVELS
+8
+GROSS AREA
+192,000 SF
+PROGRAM
+168,500 SF · 88%
+OVER CAPACITY
+None
+L8
+Behavioral Health
+16,000
+Administration
+5,000
+21,000 / 24,000
+L7
+Med-Surg Unit B
+19,000
+19,000 / 24,000
+L6
+Med-Surg Unit A
+19,000
+19,000 / 24,000
+L5
+Women & Newborn
+17,000
+17,000 / 24,000
+L4
+Critical Care (ICU)
+18,000
+Cardiac Step-down
+5,000
+23,000 / 24,000
+L3
+Imaging
+12,000
+Interventional & Cath
+7,000
+Laboratory
+4,000
+23,000 / 24,000
+L2
+Surgery Suite
+15,000
+PACU & Pre-op
+6,000
+Sterile Processing
+2,500
+23,500 / 24,000
+L1
+Emergency Department
+14,000
+Main Lobby & Public
+6,000
+Pharmacy
+3,000
+23,000 / 24,000
+DEPARTMENT	CATEGORY	SF	% OF PLATE
+Level 8	21,000	88%
+Behavioral Health	Inpatient Units	16,000	67%
+Administration	Public & Admin	5,000	21%
+Level 7	19,000	79%
+Med-Surg Unit B	Inpatient Units	19,000	79%
+Level 6	19,000	79%
+Med-Surg Unit A	Inpatient Units	19,000	79%
+Level 5	17,000	71%
+Women & Newborn	Inpatient Units	17,000	71%
+Level 4	23,000	96%
+Critical Care (ICU)	Emergency & Critical Care	18,000	75%
+Cardiac Step-down	Emergency & Critical Care	5,000	21%
+Level 3	23,000	96%
+Imaging	Diagnostic & Imaging	12,000	50%
+Interventional & Cath	Procedural & Surgical	7,000	29%
+Laboratory	Diagnostic & Imaging	4,000	17%
+Level 2	23,500	98%
+Surgery Suite	Procedural & Surgical	15,000	63%
+PACU & Pre-op	Procedural & Surgical	6,000	25%
+Sterile Processing	Support & Plant	2,500	10%
+Level 1	23,000	96%
+Emergency Department	Emergency & Critical Care	14,000	58%
+Main Lobby & Public	Public & Admin	6,000	25%
+Pharmacy	Support & Plant	3,000	13%
+Program total88% of gross area	168,500	
+
+BUILDING 2 OF 4
+
+Diagnostic & Treatment
+FLOOR PLATE
+300 × 160 ft · 48,000 SF
+FLOOR-TO-FLOOR
+17 ft
+LEVELS
+3
+GROSS AREA
+144,000 SF
+PROGRAM
+104,000 SF · 72%
+OVER CAPACITY
+None
+L3
+Simulation & Education
+18,000
+Research Labs
+14,000
+32,000 / 48,000
+L2
+Ambulatory Surgery
+24,000
+Endoscopy
+9,000
+33,000 / 48,000
+L1
+Radiology Core
+22,000
+Dialysis
+9,000
+Outpatient Lab
+8,000
+39,000 / 48,000
+DEPARTMENT	CATEGORY	SF	% OF PLATE
+Level 3	32,000	67%
+Simulation & Education	Public & Admin	18,000	38%
+Research Labs	Diagnostic & Imaging	14,000	29%
+Level 2	33,000	69%
+Ambulatory Surgery	Procedural & Surgical	24,000	50%
+Endoscopy	Procedural & Surgical	9,000	19%
+Level 1	39,000	81%
+Radiology Core	Diagnostic & Imaging	22,000	46%
+Dialysis	Ambulatory & Clinics	9,000	19%
+Outpatient Lab	Diagnostic & Imaging	8,000	17%
+Program total72% of gross area	104,000	
+
+BUILDING 3 OF 4
+
+Outpatient Pavilion
+FLOOR PLATE
+180 × 110 ft · 19,800 SF
+FLOOR-TO-FLOOR
+15 ft
+LEVELS
+5
+GROSS AREA
+99,000 SF
+PROGRAM
+85,000 SF · 86%
+OVER CAPACITY
+None
+L5
+Faculty Practice
+15,000
+15,000 / 19,800
+L4
+Neurology
+8,000
+Pain & Rehab
+8,500
+16,500 / 19,800
+L3
+Cardiology Clinic
+9,000
+Orthopedics
+9,500
+18,500 / 19,800
+L2
+Oncology Infusion
+11,000
+Radiation Oncology
+7,000
+18,000 / 19,800
+L1
+Primary Care
+12,000
+Retail Pharmacy
+2,500
+Café & Gathering
+2,500
+17,000 / 19,800
+DEPARTMENT	CATEGORY	SF	% OF PLATE
+Level 5	15,000	76%
+Faculty Practice	Public & Admin	15,000	76%
+Level 4	16,500	83%
+Neurology	Ambulatory & Clinics	8,000	40%
+Pain & Rehab	Ambulatory & Clinics	8,500	43%
+Level 3	18,500	93%
+Cardiology Clinic	Ambulatory & Clinics	9,000	45%
+Orthopedics	Ambulatory & Clinics	9,500	48%
+Level 2	18,000	91%
+Oncology Infusion	Ambulatory & Clinics	11,000	56%
+Radiation Oncology	Diagnostic & Imaging	7,000	35%
+Level 1	17,000	86%
+Primary Care	Ambulatory & Clinics	12,000	61%
+Retail Pharmacy	Support & Plant	2,500	13%
+Café & Gathering	Public & Admin	2,500	13%
+Program total86% of gross area	85,000	
+
+BUILDING 4 OF 4
+
+Central Utility Plant
+FLOOR PLATE
+120 × 90 ft · 10,800 SF
+FLOOR-TO-FLOOR
+20 ft
+LEVELS
+2
+GROSS AREA
+21,600 SF
+PROGRAM
+18,500 SF · 86%
+OVER CAPACITY
+None
+L2
+Electrical & Generators
+8,000
+8,000 / 10,800
+L1
+Chillers & Boilers
+7,500
+Loading Dock & Materials
+3,000
+10,500 / 10,800
+DEPARTMENT	CATEGORY	SF	% OF PLATE
+Level 2	8,000	74%
+Electrical & Generators	Support & Plant	8,000	74%
+Level 1	10,500	97%
+Chillers & Boilers	Support & Plant	7,500	69%
+Loading Dock & Materials	Support & Plant	3,000	28%
+Program total86% of gross area	18,500	
+
+Areas are departmental SF. A floor plate is width × depth, and a level is over capacity when its program exceeds it. Generated in the browser by 3D Interactive Building Model; nothing was uploaded.

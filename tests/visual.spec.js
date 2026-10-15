@@ -302,6 +302,59 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   expect(errors).toEqual([]);
 });
 
+test('printed report covers every building, level and department', async ({page}) => {
+  await page.clock.setFixedTime(new Date('2026-03-02T12:00:00'));
+  const errors = await open(page);
+  // headless Chromium skips the print dialog but still fires beforeprint and afterprint; this
+  // listener runs after the app's, so it sees the title that names the PDF
+  await page.evaluate(() => { window.printTitles = []; addEventListener('beforeprint', () => printTitles.push(document.title)); });
+  await menuAction(page, '[data-act=print]');
+  expect(await page.evaluate(() => printTitles)).toEqual(['3D Interactive Building Model – Program report']);
+  await expect(page).toHaveTitle('3D Interactive Building Model');
+  // the view picture is rendered at 2x; the model on screen must come back unchanged
+  await settle(page);
+  await stageShot(page, '00-initial.png', false);
+
+  // in print, the page holds only the report: the summary, then one page per building
+  await page.emulateMedia({media: 'print'});
+  const report = page.locator('#report');
+  await expect(report).toBeVisible();
+  await expect(page.locator('#app')).toBeHidden();
+  expect.soft(await report.innerText()).toMatchSnapshot('report.txt');
+  await expect(report.locator('.r-bldg')).toHaveCount(4);
+  expect(await report.locator('.r-bldg').first().evaluate(e => getComputedStyle(e).breakBefore)).toBe('page');
+  // the view picture shows the model, trimmed to it
+  const inked = await report.locator('.r-fig canvas').evaluate(c => {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.min(d[i], d[i + 1], d[i + 2]) < 200) n++;
+    return n / (c.width * c.height);
+  });
+  expect(inked).toBeGreaterThan(0.2);
+  await page.emulateMedia({media: 'screen'});
+
+  // the browser's own print (Ctrl+P / ⌘P) rebuilds it from the live layout. Chromium ignores repeated
+  // print() calls without a user gesture, so fire its events directly
+  const browserPrint = () => page.evaluate(() => { dispatchEvent(new Event('beforeprint')); dispatchEvent(new Event('afterprint')); });
+  await page.click('#left [data-b=tower]');
+  await page.click('#right .chip[data-dept=icu]');
+  await page.fill('#area', '30000');
+  await page.press('#area', 'Enter');
+  await expect(page.locator('#right .lvl', {hasText: 'Level 4'})).toContainText('35,000 / 24,000 SF · over');
+  await page.click('#right .chip[data-dept=bh]');
+  await page.selectOption('#lvl', '-1');
+  await browserPrint();
+  await expect(report.locator('.r-kv').first()).toContainText('35 placed · 1 unassigned');
+  await expect(report.locator('.r-kv').first()).toContainText('1 level');
+  await expect(report.locator('.r-sec', {hasText: 'Unassigned · 1'})).toContainText('Behavioral Health');
+  await expect(report.locator('.r-lvrow.r-over')).toHaveText(/Level 4Over by 11,000 SF\s*35,000\s*146%/);
+
+  // from the start screen the browser prints the page as it is
+  await page.click('#home');
+  await browserPrint();
+  await expect(page.locator('html')).not.toHaveClass(/print-report/);
+  expect(errors).toEqual([]);
+});
+
 test('toolbar shortcuts and menu', async ({page}) => {
   const errors = await open(page);
   const pressed = sel => expect(page.locator(sel)).toHaveAttribute('aria-pressed', 'true');
