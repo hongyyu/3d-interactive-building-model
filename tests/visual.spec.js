@@ -42,6 +42,19 @@ async function dragLabel(page, name, dx, dy) {
   for (let i = 1; i <= 10; i++) await page.mouse.move(c.x + dx * i / 10, c.y + dy * i / 10);
 }
 
+/* Screenshot of the free part of the stage, between the floating side panels: the 3D view and its
+   labels. The panels' content is in the text snapshots, and the full-page shots show how they look. */
+async function stageShot(page, name, soft = true) {
+  const clip = await page.evaluate(() => {
+    const s = document.querySelector('#stage'), r = s.getBoundingClientRect(), cs = getComputedStyle(s);
+    // stay 24px clear of a panel, past its shadow
+    const inset = v => { const n = parseFloat(cs.getPropertyValue(v)) || 0; return n ? n + 24 : 0; };
+    const l = inset('--inset-l'), rr = inset('--inset-r');
+    return {x: r.left + l, y: r.top, width: r.width - l - rr, height: r.height};
+  });
+  await (soft ? expect.soft(page) : expect(page)).toHaveScreenshot(name, {clip});
+}
+
 /* runs an item of the toolbar's More actions menu */
 async function menuAction(page, sel) {
   await page.click('#tools [data-act=menu]');
@@ -49,8 +62,9 @@ async function menuAction(page, sel) {
 }
 
 async function dragCanvas(page, button, sx, sy) {
-  const b = await page.locator('#gl').boundingBox();
-  const x = b.x + 40, y = b.y + 60;
+  // start on open canvas, right of the floating left panel
+  const b = await page.locator('#gl').boundingBox(), l = await page.locator('#left').boundingBox();
+  const x = l.x + l.width + 40, y = b.y + 60;
   await page.mouse.move(x, y);
   await page.mouse.down({button});
   for (let i = 1; i <= 8; i++) await page.mouse.move(x + sx * i, y + sy * i);
@@ -122,7 +136,7 @@ test('demo program scenario', async ({page}) => {
       await act(page);
       await settle(page);
       expect.soft(await domSnapshot(page)).toMatchSnapshot(id + '.json');
-      await expect.soft(page.locator('#stage')).toHaveScreenshot(id + '.png');
+      await stageShot(page, id + '.png');
       if (FULL_PAGE.has(name)) await expect.soft(page).toHaveScreenshot(id + '-page.png', {fullPage: true});
     });
   }
@@ -147,7 +161,7 @@ test('downloaded template imports back to the same model', async ({page}) => {
   await expect(page.locator('#psub')).toHaveText('program_template.xlsx · imported');
   await settle(page);
   // the imported template must render exactly like the built-in demo
-  await expect(page.locator('#stage')).toHaveScreenshot('00-initial.png');
+  await stageShot(page, '00-initial.png', false);
 
   page.once('dialog', d => d.accept());
   await page.click('#left [data-act=demo]');
@@ -169,7 +183,7 @@ test('CSV import reports problems and fills the Unassigned tray', async ({page})
   const tray = right.locator('.blk', {hasText: 'Unassigned · 3'});
   await expect(tray.locator('.chip')).toHaveText([/Sleep Lab/, /Pharmacy/, /Rooftop Garden/]);
   expect.soft(await domSnapshot(page)).toMatchSnapshot('csv-imported.json');
-  await expect.soft(page.locator('#stage')).toHaveScreenshot('csv-imported.png');
+  await stageShot(page, 'csv-imported.png');
 
   // place a tray department on Level 3 of the selected building, then send it back
   await tray.locator('.chip', {hasText: 'Sleep Lab'}).click();
@@ -178,7 +192,7 @@ test('CSV import reports problems and fills the Unassigned tray', async ({page})
   await expect(right).toContainText('Unassigned · 2');
   await expect(right.locator('.lvl', {hasText: 'Level 3'})).toContainText('Sleep Lab');
   await settle(page);
-  await expect.soft(page.locator('#stage')).toHaveScreenshot('csv-placed.png');
+  await stageShot(page, 'csv-placed.png');
   await page.selectOption('#lvl', '-1');
   await expect(right).toContainText('Unassigned · 3');
 
@@ -235,7 +249,7 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await expect(right.locator('.lvl').first()).toContainText('Level 9');
   await expect(right.locator('.lvl').first()).toContainText('Empty level');
   await settle(page);
-  await expect.soft(page.locator('#stage')).toHaveScreenshot('level-added.png');
+  await stageShot(page, 'level-added.png');
 
   // removing a level that holds departments sends them to the Unassigned tray
   await page.click('#right [data-act=rmlevel]');
@@ -243,14 +257,14 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await expect(tower).toContainText('7 levels');
   await expect(right.locator('.blk', {hasText: 'Unassigned · 2'}).locator('.chip')).toHaveText([/Behavioral Health/, /Administration/]);
   await settle(page);
-  await expect.soft(page.locator('#stage')).toHaveScreenshot('level-removed.png');
+  await stageShot(page, 'level-removed.png');
 
   // Reset layout restores the loaded level count, so the view matches the scenario's axon step
   await menuAction(page, '[data-act=resetlayout]');
   await expect(tower).toContainText('8 levels');
   await expect(right).not.toContainText('Unassigned');
   await settle(page);
-  await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
+  await stageShot(page, '03-axon.png');
 
   // laser: Alt-drag draws a red stroke and leaves the model where it was
   await page.click('#tools [data-act=laser]');
@@ -270,12 +284,14 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   expect(px[0]).toBeGreaterThan(150);
   expect(px[3]).toBeGreaterThan(100);
   // L toggles it off and clears the drawing
+  // the laser tool keeps focus from its click, and a key press would show its focus tooltip over the stage
+  await page.evaluate(() => document.activeElement.blur());
   await page.keyboard.press('l');
   await expect(page.locator('#laser')).toBeHidden();
   await expect(page.locator('#tools [data-act=laser]')).toHaveAttribute('aria-pressed', 'false');
   await page.mouse.move(b.x + b.width + 40, b.y + 40);
   await settle(page);
-  await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
+  await stageShot(page, '03-axon.png');
   expect(errors).toEqual([]);
 });
 

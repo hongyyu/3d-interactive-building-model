@@ -1,15 +1,17 @@
 import {DEPTS} from '../data/project.js';
-import {state,BDEF,drag,hoverId} from '../state.js';
+import {state,BDEF,drag,hoverId,isOverview} from '../state.js';
 import {S,SLAB,CLEAR,BASE,GAP} from './constants.js';
 import {B,D,grid,edgeMat,edgeSelMat,dropBox,slotBox,dropInk,dropAlert} from './scene.js';
 import {explode,gridT} from './view.js';
 
 export function updateScene(k){
-  const selId=state.sel, mode=state.mode;
+  const selId=state.sel, mode=state.mode, ov=isOverview();
+  // in the campus overview every building is open (departments shown) and the hovered one glows
+  const hoverB=ov&&hoverId&&D[hoverId]?D[hoverId].b:null;
   grid.material.opacity+=(gridT-grid.material.opacity)*k;
   grid.visible=grid.material.opacity>0.02;
   for(const bid in B){
-    const R=B[bid], def=R.def, sel=bid===selId;
+    const R=B[bid], def=R.def, sel=ov||bid===selId;
     const W=def.w*S, Dp=def.d*S, fhU=def.fh*S, pitch=fhU*(1+explode), n=R.shells.length;
     const tf=sel?1:(mode==='mass'?1:0);
     R.fade+=(tf-R.fade)*k; if(Math.abs(tf-R.fade)<0.01)R.fade=tf;
@@ -39,7 +41,7 @@ export function updateScene(k){
     }
   }
   for(const id in D){
-    const d=D[id], sel=d.b===selId;
+    const d=D[id], sel=d.b!=null&&(ov||d.b===selId);
     d.mesh.visible=sel;
     if(!sel) continue;
     const def=BDEF[d.b], fhU=def.fh*S, h=fhU-SLAB-CLEAR, pitch=fhU*(1+explode);
@@ -57,7 +59,7 @@ export function updateScene(k){
     d.mat.opacity=d.dim; d.mat.depthWrite=!tr;
     d.ed.visible=d.dim>0.5;
     const isSel=state.selDept===id;
-    const em=isSel?0.22:(hoverId===id||isDrag?0.12:0);
+    const em=isSel?0.22:(hoverId===id||isDrag?0.12:(d.b===hoverB?0.06:0));
     d.mat.emissive.copy(d.base).multiplyScalar(em);
     const em2=isSel?edgeSelMat:edgeMat;
     if(d.ed.material!==em2) d.ed.material=em2;
