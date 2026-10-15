@@ -270,8 +270,9 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await page.click('#tools [data-act=laser]');
   await expect(page.locator('#laser')).toBeVisible();
   await expect(page.locator('#stage')).toHaveClass(/lasering/);
-  const b = await page.locator('#gl').boundingBox();
-  const x = b.x + 200, y = b.y + 200;
+  // draw on open canvas, right of the floating left panel; the laser leaves the panels alone
+  const b = await page.locator('#gl').boundingBox(), lp = await page.locator('#left').boundingBox();
+  const x = lp.x + lp.width + 40, y = b.y + 200;
   const laserPixel = (px, py) => page.evaluate(([px, py]) => new Promise(done => {
     // two frames, so the laser has drawn the latest pointer moves
     requestAnimationFrame(() => requestAnimationFrame(() => {
