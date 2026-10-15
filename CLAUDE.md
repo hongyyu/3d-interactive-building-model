@@ -21,7 +21,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - **Visual test** (`tests/visual.spec.js`): builds the app and serves `dist/` on :4174.
   - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of `#stage`. Three steps also get full-page shots.
   - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file.
-  - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then draws with the laser. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
+  - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
@@ -73,9 +73,11 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - An import started from the start screen closes it when the import dialog closes with `returnValue === 'ok'`. `importDialog.js` clears `returnValue` on open, because Escape keeps the old value.
 - `#importFile` sits outside `#app`, so the file picker still opens while `#app` is inert.
 
-**Laser** (`ui/laser.js`): a full-window 2D canvas `#laser` with `pointer-events:none` draws the halo, the trail, click ripples and Alt-drag strokes.
-- Its pointer listeners run in the capture phase on `window`. An Alt-drag stops propagation, so the 3D gesture never starts.
-- The draw loop runs only while something is fading.
+**Laser** (`ui/laser.js`), after Excalidraw's: while it is on, the stage shows a laser-pen cursor and a left drag on the stage draws a solid red line. Moving without pressing draws nothing.
+- The line is drawn on a full-window 2D canvas `#laser` with `pointer-events:none`, as one filled outline per drag, so it has no seams. It tapers behind the pen tip, and each point shrinks away over `FADE` ms.
+- Its pointer listeners run in the capture phase on `window`. A left press on the stage stops propagation, so the 3D gesture never starts and the model stays still. Right-drag (pan) and the wheel (zoom) pass through. The panels and toolbar are not affected.
+- The class `.lasering` on `#stage` applies the cursor (`--laser-cursor`, set in `bindLaser()`) over the grab and pointer cursors from `ui/pointer.js`, and swaps `#hint` for `.laser-hint`.
+- The draw loop runs only while a line is on screen.
 - `L` toggles the laser. Escape turns it off, unless a department drag is in progress (then Escape cancels only the drag).
 
 **State** (`state.js`): `state.levels[buildingId]` and `state.unassigned` (the tray) are the source of truth for stacking. `state.levels[bid].length` is the live level count; `def.levels` is only the loaded definition, so don't read the count from it. `addLevel` and `removeTopLevel` (`ui/actions.js`) change the count; removing a level sends its departments to the tray. `setLevelCount(bid, n)` (`scene/scene.js`) creates or disposes that building's per-level shell, slab and void meshes to match. A new level starts with `R.lift[f] = 1` and drops into place. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.

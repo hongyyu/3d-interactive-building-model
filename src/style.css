@@ -158,8 +158,12 @@ a.btn{display:inline-block;text-decoration:none;color:var(--ink)}
 .mini:hover{background:#f3f5f8}
 .mini:disabled{opacity:.45;cursor:default;background:#fff}
 .lvempty{margin-top:5px}
-/* presenter laser */
+/* presenter laser: while it is on, the pen cursor (set by ui/laser.js) beats the stage's grab and
+   pointer cursors, and the stage hint lists the laser gestures */
 .laser{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:40}
+.stage.lasering,.stage.lasering *{cursor:var(--laser-cursor)!important}
+.laser-hint,.stage.lasering #hint{display:none}
+.stage.lasering .laser-hint{display:block}
 /* start screen */
 .welcome{position:fixed;inset:0;z-index:30;overflow:auto;display:grid;place-items:center;padding:40px 16px;
   background-color:var(--bg);background-image:linear-gradient(rgba(20,25,34,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(20,25,34,.035) 1px,transparent 1px);background-size:24px 24px;

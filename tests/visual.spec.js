@@ -252,27 +252,33 @@ test('start screen, adding levels and the laser pointer', async ({page}) => {
   await settle(page);
   await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
 
-  // laser: Alt-drag draws a red stroke and leaves the model where it was
+  // laser: moving the mouse draws nothing; a drag draws a red line and leaves the model where it was
   await page.click('#tools [data-act=laser]');
   await expect(page.locator('#laser')).toBeVisible();
+  await expect(page.locator('#stage')).toHaveClass(/lasering/);
   const b = await page.locator('#gl').boundingBox();
   const x = b.x + 200, y = b.y + 200;
-  await page.keyboard.down('Alt');
+  const laserPixel = (px, py) => page.evaluate(([px, py]) => new Promise(done => {
+    // two frames, so the laser has drawn the latest pointer moves
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const c = document.querySelector('#laser'), s = c.width / innerWidth;
+      done([...c.getContext('2d').getImageData(Math.round(px * s), Math.round(py * s), 1, 1).data]);
+    }));
+  }), [px, py]);
+  for (let i = 0; i <= 10; i++) await page.mouse.move(x + i * 20, y + i * 5);
+  expect((await laserPixel(x + 100, y + 25))[3]).toBe(0);
   await page.mouse.move(x, y);
   await page.mouse.down();
   for (let i = 1; i <= 10; i++) await page.mouse.move(x + i * 20, y + i * 5);
+  const px = await laserPixel(x + 100, y + 25);
   await page.mouse.up();
-  await page.keyboard.up('Alt');
-  const px = await page.evaluate(([px, py]) => {
-    const c = document.querySelector('#laser'), s = c.width / innerWidth;
-    return [...c.getContext('2d').getImageData(Math.round(px * s), Math.round(py * s), 1, 1).data];
-  }, [x + 100, y + 25]);
   expect(px[0]).toBeGreaterThan(150);
   expect(px[3]).toBeGreaterThan(100);
   // L toggles it off and clears the drawing
   await page.keyboard.press('l');
   await expect(page.locator('#laser')).toBeHidden();
   await expect(page.locator('#tools [data-act=laser]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#stage')).not.toHaveClass(/lasering/);
   await page.mouse.move(b.x + b.width + 40, b.y + 40);
   await settle(page);
   await expect.soft(page.locator('#stage')).toHaveScreenshot('03-axon.png');
