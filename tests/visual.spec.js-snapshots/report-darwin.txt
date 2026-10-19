@@ -271,4 +271,4 @@ Chillers & Boilers	Support & Plant	7,500	69%
 Loading Dock & Materials	Support & Plant	3,000	28%
 Program total86% of gross area	18,500	
 
-Areas are departmental SF. A floor plate is width × depth, and a level is over capacity when its program exceeds it. Generated in the browser by 3D Interactive Building Model; nothing was uploaded.
+Areas are departmental SF. A floor plate is width × depth, and a level is over capacity when its program exceeds it. Generated in the browser by 3D Interactive Building Model © 2026 Hongyu Li and Zining Cheng; nothing was uploaded.
