@@ -139,7 +139,7 @@ export function renderReport(){
     '<p class="r-sub">'+esc(PROJECT.sub)+'</p></div><p class="r-sub">'+date+'</p></header>'+
     summary(stats)+unassigned(notes)+stats.map((s,i)=>building(s,i,stats.length,notes)).join('')+
     '<p class="r-foot">Areas are departmental SF. A floor plate is width × depth, and a level is over capacity when its program exceeds it. '+
-    'Generated in the browser by 3D Interactive Building Model; nothing was uploaded.</p>';
+    'Generated in the browser by 3D Interactive Building Model © 2026 Hongyu Li and Zining Cheng; nothing was uploaded.</p>';
   report.querySelector('.r-fig').prepend(snapshot());
 }
 
