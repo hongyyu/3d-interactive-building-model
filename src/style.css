@@ -257,7 +257,7 @@ a.btn{display:inline-block;text-decoration:none;color:var(--ink)}
 .laser-hint,.stage.lasering #hint{display:none}
 .stage.lasering .laser-hint{display:block}
 /* start screen */
-.welcome{position:fixed;inset:0;z-index:30;overflow:auto;display:grid;place-items:center;padding:40px 16px;
+.welcome{position:fixed;inset:0;z-index:30;overflow:auto;display:grid;grid-template-rows:1fr auto;row-gap:24px;place-items:center;padding:40px 16px;
   background-color:var(--bg);background-image:linear-gradient(rgba(20,25,34,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(20,25,34,.035) 1px,transparent 1px);background-size:24px 24px;
   transition:opacity .35s ease,transform .35s ease}
 .welcome.leaving{opacity:0;transform:scale(1.015);pointer-events:none}
@@ -280,6 +280,7 @@ a.btn{display:inline-block;text-decoration:none;color:var(--ink)}
 .wbtn.primary small{color:#b9c1cf}
 .wbtn.primary:hover{background:#2a3140}
 .wfine a{color:var(--ink-2);text-underline-offset:3px}
+.wlegal{text-align:center}
 .wcopy .link{align-self:flex-start;margin-top:0}
 .wart{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
 .wstack{width:100%;max-width:400px}
