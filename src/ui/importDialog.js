@@ -49,7 +49,9 @@ export function bindImport(){
     const file=input.files[0]; input.value='';
     if(file) importFile(file);
   });
+  // the close event comes a task later; when the next import has opened the dialog by then, it is stale
   dlg.addEventListener('close',()=>{
+    if(dlg.open) return;
     if(dlg.returnValue==='ok'&&pending) openProject(pending);
     pending=null;
   });
