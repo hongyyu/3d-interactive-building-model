@@ -4,17 +4,19 @@ import {CATS,DEPTS,BUILDINGS,UNASSIGNED} from './data/project.js';
    for "Reset layout" and "Reset colours" (a department without its own colour is stored as '') */
 export const BDEF={}, INIT_AREAS={}, INIT_CAT_COLORS={}, INIT_DEPT_COLORS={};
 export let INIT_LEVELS='';
-export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,isolate:null,levels:{},unassigned:[],panelOpen:true,buildingsOpen:true,picking:null};
+export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,sf:true,isolate:null,levels:{},unassigned:[],panelOpen:true,buildingsOpen:true,picking:null};
 
-/* state.panelOpen: whether the right panel shows more than its title row
+/* state.labels / state.sf: whether department labels show, and whether they show their SF line, in
+   every view mode alike
+   state.panelOpen: whether the right panel shows more than its title row
    state.buildingsOpen: whether the left panel's Buildings section shows its cards
    state.picking: what the open colour panel edits ('cat:<key>' or 'dept:<id>'), or null */
 
 /* Campus overview: 3D Massing with no building focused. Every building shows its departments and
-   none is highlighted; state.sel still names the building Axon, Section Stack and the tray use. */
+   none is highlighted; state.sel still names the building Axon, Stacking and the tray use. */
 export function isOverview(){ return state.mode==='mass'&&state.focus==='campus'; }
 
-/* resets selection and stacking to the freshly loaded project; the view mode and labels are kept */
+/* resets selection and stacking to the freshly loaded project; the view mode and label settings are kept */
 export function initState(){
   for(const k in BDEF) delete BDEF[k];
   [INIT_AREAS,INIT_CAT_COLORS,INIT_DEPT_COLORS].forEach(o=>{ for(const k in o) delete o[k]; });

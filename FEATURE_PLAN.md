@@ -2,7 +2,7 @@
 
 **Goal:** turn the current single-page prototype into a web tool that medical planners can use on any project: load a building model and a program, study stacking options, plan vertical circulation, and export diagrams and data for client meetings.
 
-**Current state (v0.1):** one self-contained `index.html` built on Three.js r128. It has three views (3D Massing, Axon, Section Stack). Department volumes scale with SF. Departments can be dragged between levels. Buildings and program are hard-coded sample data, and the floor plates are rectangles.
+**Current state (v0.1):** one self-contained `index.html` built on Three.js r128. It has three views (3D Massing, Axon, Stacking). Department volumes scale with SF. Departments can be dragged between levels. Buildings and program are hard-coded sample data, and the floor plates are rectangles.
 
 ---
 

@@ -44,7 +44,7 @@ export function showCampus(){
   else { retarget(false); setViewRate(3.2); }
   refreshUI(); updateHint();
 }
-/* Axon and Section Stack always show one building, so they focus it; 3D Massing keeps the focus
+/* Axon and Stacking always show one building, so they focus it; 3D Massing keeps the focus
    it had, so going back from Axon returns to that building rather than the overview */
 export function setMode(m){
   const prev=state.mode;
@@ -54,6 +54,11 @@ export function setMode(m){
   updateHint();
   retarget(false); setViewRate(3.2);
   if(prev!==m) refreshUI();
+}
+/* SF on the department labels, in every view mode alike */
+export function toggleSF(){
+  state.sf=!state.sf;
+  $('#tools [data-act=sf]').setAttribute('aria-pressed',String(state.sf));
 }
 export function setArea(id,v){
   if(!id||!isFinite(v))return;

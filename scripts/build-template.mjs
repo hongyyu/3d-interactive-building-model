@@ -37,7 +37,7 @@ info.getColumn(1).width = 110;
   ['1. Buildings sheet: one row per building.'],
   ['2. Categories sheet (optional): one row per category, with a hex colour such as #E0554E.'],
   ['3. Program sheet: one row per department.'],
-  ['4. In the app, click "Import…" and choose this file. It is read in your browser and never uploaded.'],
+  ['4. In the app, choose "Import program…" from the ☰ menu and pick this file. It is read in your browser and never uploaded.'],
   ['Columns marked * are required. Areas are in square feet (SF); dimensions are in feet.'],
   ['The example rows are a fictional demo campus. Replace them with your own data.'],
   [''],

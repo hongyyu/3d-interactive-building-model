@@ -4,7 +4,7 @@ import {leftEl,rightEl,overlay} from '../dom.js';
 import {$} from '../util.js';
 import {retarget,setViewRate} from '../scene/view.js';
 import {renderLeft,renderRight} from './panels.js';
-import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,showCampus,resetColors} from './actions.js';
+import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,showCampus,resetColors,toggleSF} from './actions.js';
 import {bindColorPanel,editCatColor,editDeptColor} from './colorPanel.js';
 import {bindImport,chooseImportFile,loadDemo} from './importDialog.js';
 import {toggleLaser} from './laser.js';
@@ -63,6 +63,7 @@ export function bindControls(){
     if(a==='menu'){ setMenu(menu.hidden,e.detail===0); return; }
     setMenu(false);
     if(a==='labels') toggleLabels();
+    else if(a==='sf') toggleSF();
     else if(a==='resetview') resetView();
     else if(a==='resetlayout') resetLayout();
     else if(a==='import') chooseImportFile();
@@ -95,7 +96,7 @@ function setMenu(open,focusFirst){
   else if(!open&&menu.contains(document.activeElement)) menuBtn.focus();
 }
 /* single-key shortcuts; L for the laser lives in ui/laser.js */
-const KEYS={'1':()=>setMode('mass'),'2':()=>setMode('axon'),'3':()=>setMode('stack'),t:toggleLabels,p:togglePresent,f:resetView};
+const KEYS={'1':()=>setMode('mass'),'2':()=>setMode('axon'),'3':()=>setMode('stack'),t:toggleLabels,s:toggleSF,p:togglePresent,f:resetView};
 function bindToolbarUI(){
   // a clicked tool hides its tooltip until the pointer leaves it
   document.querySelectorAll('.top .tool').forEach(t=>{

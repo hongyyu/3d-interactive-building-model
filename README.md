@@ -33,18 +33,19 @@ The icon left of the title brings the start screen back.
 | **Campus overview** | — | Every building with its departments in colour, and campus totals on the right. Every project opens here. |
 | **3D Massing** | `1` | Perspective master plan. Click a building to focus it. |
 | **Axon** | `2` | Exploded, near-orthographic axonometric of the focused building. |
-| **Section Stack** | `3` | Elevation stacking diagram of the focused building, level by level. |
+| **Stacking** | `3` | Flat elevation stacking diagram of the focused building, its levels stacked without gaps. |
 
 - Department volumes scale with area (SF) relative to the floor plate. Unused floor area shows as a translucent void, and a level whose program is larger than its floor plate is flagged as over capacity.
 - To focus a building, click it, its tag or its card in the left panel. **Full campus**, at the top of the Buildings list, returns to the overview.
-- **Navigate:** drag to orbit, scroll or pinch to zoom, and right-drag or Shift-drag to pan. In Section Stack, dragging empty space pans.
+- **Navigate:** drag to orbit, scroll or pinch to zoom, and right-drag or Shift-drag to pan. In Stacking, dragging empty space pans.
+- **Labels:** each department's label shows its name and SF on two lines, in every view. In Axon it is centred on the department's side face, on every level alike, and each level's area summary sits left of the building. On a floor too thin on screen for two lines, the label's text shrinks to fit (down to 75%); thinner still, it shows the name only until you zoom in. Zooming in makes the labels and tags grow, up to 1.6×, so they stay readable on a projector; they never shrink below their normal size.
 
-![Section Stack of the Outpatient Pavilion, with the Oncology Infusion department selected and its card open in the right panel](tests/visual.spec.js-snapshots/06-select-dept-chip-page-darwin.png)
+![Stacking view of the Outpatient Pavilion, with the Oncology Infusion department selected and its card open in the right panel](tests/visual.spec.js-snapshots/06-select-dept-chip-page-darwin.png)
 
 ## Editing the stack
 
 **Departments**
-- **Move:** drag a department to another level or position. In Section Stack, drag up or down to change its level and sideways to reorder. Escape cancels the drag.
+- **Move:** drag a department to another level or position. In Stacking, drag up or down to change its level and sideways to reorder. Escape cancels the drag.
 - **Edit:** click a department to open its card in the right panel. Change its area with − / + or by typing, pick a level, or change its colour.
 - **Unassigned tray:** departments without a level wait in the right panel. Select one and pick a level to place it in the focused building.
 
@@ -71,6 +72,7 @@ The icon left of the title brings the start screen back.
 |---|---|---|
 | **Present** | `P` | Hides both side panels so the model fills the screen. |
 | **Labels** | `T` | Shows or hides department labels. |
+| **SF on labels** | `S` | Adds or removes each label's SF line. Like **Labels**, it applies to every view. |
 | **Laser pointer** | `L` | Drag on the model to draw a red line that fades within two seconds, so the room can follow along. The model stays still; right-drag still pans and the wheel still zooms. `L` or Escape turns it off. |
 | **Reset view** | `F` | Reframes the camera. |
 
@@ -83,8 +85,9 @@ The icon left of the title brings the start screen back.
 
 | Key | Action |
 |---|---|
-| `1` `2` `3` | 3D Massing, Axon, Section Stack |
+| `1` `2` `3` | 3D Massing, Axon, Stacking |
 | `T` | Labels on / off |
+| `S` | SF on labels on / off |
 | `L` | Laser pointer on / off |
 | `P` | Present mode on / off |
 | `F` | Reset view |
@@ -110,9 +113,6 @@ Shortcuts are ignored while you type in a field or while a dialog is open. Each 
 4. **Check and load:** a summary lists what was read and any rows with problems. **Replace project** loads it.
 
 Departments without a building or level wait in the **Unassigned** tray. **Reset layout** returns to the imported layout, and **Load demo project** (left panel) brings back the demo.
-
-> [!NOTE]
-> **Your data stays on your computer.** Files are read in the browser and never uploaded; there is no server. Keep real client data out of this repo: the bundled demo (`src/data/demo.js`) and the test fixtures must stay fictional.
 
 ## Development
 
@@ -154,7 +154,7 @@ npm run test:visual               # build, then run every test in headless Chrom
 | **Rejected file** | A file with the wrong columns can't be loaded. |
 | **Start screen, levels and laser** | Imports from the start screen and returns to it, adds and removes levels, resets the layout, and checks that the laser draws only while dragging. |
 | **Printed report** | Checks the report's text and pages, then overfills a level, sends a department to the tray, and checks that a second print shows both. |
-| **Toolbar shortcuts and menu** | Keyboard shortcuts, that they're ignored while typing, and the ☰ menu from the keyboard. |
+| **Toolbar shortcuts and menu** | Keyboard shortcuts, the Labels and SF settings across views, that shortcuts are ignored while typing, and the ☰ menu from the keyboard. |
 | **Level editing** | Reorders levels by dragging and with the arrow keys, cancels a drag with Escape, inserts and removes levels, and folds the right panel and the Buildings list. |
 | **Category donut** | Hovers a slice, a legend row and a department in the model, and checks that the donut, the legend and the model light the same category. Clicking a slice isolates it. |
 | **Colour panel** | Recolours a category from the palette, the colour area and the hex field, then a department. Checks Escape, outside clicks and **Use category colour**, and that **Reset colours** restores the demo's look. |

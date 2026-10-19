@@ -89,7 +89,7 @@ export function bindWelcome(){
   });
   // an import started here closes the start screen once the user confirms "Replace project"
   const dlg=$('#importDlg');
-  dlg.addEventListener('close',()=>{ if(open&&dlg.returnValue==='ok') closeWelcome(); });
+  dlg.addEventListener('close',()=>{ if(open&&!dlg.open&&dlg.returnValue==='ok') closeWelcome(); });
   $('#home').addEventListener('click',showWelcome);
   if(open){ el.classList.add('play'); $('[data-act=demo]',el).focus(); }
 }

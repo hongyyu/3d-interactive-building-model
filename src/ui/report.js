@@ -12,7 +12,7 @@ import {welcomeOpen} from './welcome.js';
    building with its stacking diagram and every department, level by level. It is rebuilt on each
    print, from the ☰ menu or the browser's own Ctrl+P / ⌘P, and the print stylesheet then shows only
    #report. The browser's print dialog saves it as a PDF; nothing leaves the browser. */
-const MODES={mass:'3D Massing',axon:'Axon',stack:'Section Stack'};
+const MODES={mass:'3D Massing',axon:'Axon',stack:'Stacking'};
 const report=$('#report'), root=document.documentElement;
 let savedTitle=null;
 
