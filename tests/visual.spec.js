@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
 import fs from 'node:fs';
+import {demoMassing} from './massing-fixture.js';
 
 // Replays a fixed scenario on the demo program. Each step checks a text snapshot of the
 // panels and overlay labels plus a screenshot of the 3D stage; a few steps also check the
@@ -69,6 +70,12 @@ async function dragLevel(page, f, y, release = true) {
   await page.mouse.down();
   for (let i = 1; i <= 10; i++) await page.mouse.move(x, y0 + (y - y0) * i / 10);
   if (release) await page.mouse.up();
+}
+
+/* the rows of the Rhino massing import dialog as 'ticked | name | levels | departments from' */
+function massRows(page) {
+  return page.locator('#importBody .mrow').evaluateAll(rs => rs.map(r => [r.querySelector('[data-m=on]').checked, r.querySelector('.mname').value,
+    r.querySelector('.mlv').value, r.querySelector('select').value].join(' | ')));
 }
 
 /* runs an item of the toolbar's More actions menu */
@@ -161,7 +168,7 @@ test('demo program scenario', async ({page}) => {
 
 test('downloaded template imports back to the same model', async ({page}) => {
   const errors = await open(page);
-  const [download] = await Promise.all([page.waitForEvent('download'), menuAction(page, 'a[download]')]);
+  const [download] = await Promise.all([page.waitForEvent('download'), menuAction(page, 'a[href$=".xlsx"]')]);
   expect(download.suggestedFilename()).toBe('program_template.xlsx');
   await page.setInputFiles('#importFile', {
     name: 'program_template.xlsx',
@@ -222,6 +229,86 @@ test('CSV import reports problems and fills the Unassigned tray', async ({page})
   await menuAction(page, '[data-act=resetlayout]');
   await expect(right).toContainText('Unassigned · 3');
   await expect(page.locator('#psub')).toHaveText('program-with-issues.csv · imported');
+  expect(errors).toEqual([]);
+});
+
+test('a Rhino massing replaces the buildings and keeps the program', async ({page}) => {
+  const errors = await open(page);
+  const body = page.locator('#importBody'), rows = body.locator('.mrow');
+  // a file that is not a Rhino model is rejected
+  await page.setInputFiles('#massFile', {name: 'broken.3dm', mimeType: 'application/octet-stream', buffer: Buffer.from('not a rhino model')});
+  await expect(body.locator('.msgs.err')).toContainText('could not be read', {timeout: 30_000});
+  await expect(page.locator('#importOk')).toBeHidden();
+  await page.click('#importDlg [value=cancel]');
+
+  await page.setInputFiles('#massFile', {name: 'campus-massing.3dm', mimeType: 'application/octet-stream', buffer: await demoMassing()});
+  await expect(rows).toHaveCount(5, {timeout: 30_000});
+  // names come from object and layer names and pick the demo building of that name; levels come from
+  // User Text, stacked floors and the layer's floor-to-floor, and the plain box from its height;
+  // the Context layer's mass starts unticked
+  expect(await massRows(page)).toEqual([
+    'true | Hospital Tower | 8 | tower',
+    'true | Diagnostic & Treatment | 3 | dt',
+    'true | Outpatient Pavilion | 5 | opp',
+    'true | Central Utility Plant | 3 | cup',
+    'false | Neighbour | 4 | ',
+  ]);
+  const notes = body.locator('.msgs');
+  for (const t of ['in metres', 'turned 20.0°', '1 hidden object', '1 flat object']) await expect(notes).toContainText(t);
+  await expect(body.locator('#mkv')).toContainText('36 · 0');
+  // a building's departments go to one mass only, and an untyped name follows the building picked
+  await rows.nth(4).locator('select').selectOption('tower');
+  await expect(rows.nth(0).locator('select')).toHaveValue('');
+  await expect(rows.nth(4).locator('.mname')).toHaveValue('Hospital Tower');
+  await expect(body.locator('#mkv')).not.toContainText('36 · 0');
+  await rows.nth(0).locator('select').selectOption('tower');
+  await expect(rows.nth(4).locator('select')).toHaveValue('');
+  // the plant's height over 2 levels gives the demo's 20 ft floors
+  await rows.nth(3).locator('.mlv').fill('2');
+  await expect(rows.nth(3).locator('.mmeta')).toContainText('20.0 ft floor-to-floor');
+  await page.click('#importOk');
+  await expect(page.locator('#importDlg')).toBeHidden();
+  await expect(page.locator('#psub')).toHaveText('Fictional demo campus · placeholder figures · campus-massing.3dm');
+  await settle(page);
+  // the massing is the demo campus, so the model must look exactly like it
+  await stageShot(page, '00-initial.png', false);
+  expect(errors).toEqual([]);
+});
+
+test('downloaded Rhino example imports back, and a program import keeps its buildings', async ({page}) => {
+  const errors = await open(page);
+  const [massing] = await Promise.all([page.waitForEvent('download'), menuAction(page, 'a[href$=".3dm"]')]);
+  expect(massing.suggestedFilename()).toBe('campus_massing.3dm');
+  await page.setInputFiles('#massFile', {name: 'campus_massing.3dm', mimeType: 'application/octet-stream', buffer: fs.readFileSync(await massing.path())});
+  await expect(page.locator('#importBody .mrow')).toHaveCount(4, {timeout: 30_000});
+  expect(await massRows(page)).toEqual([
+    'true | Hospital Tower | 8 | tower',
+    'true | Diagnostic & Treatment | 3 | dt',
+    'true | Outpatient Pavilion | 5 | opp',
+    'true | Central Utility Plant | 2 | cup',
+  ]);
+  await expect(page.locator('#importBody .msgs')).toContainText('1 flat object');
+  await page.click('#importOk');
+  await expect(page.locator('#importDlg')).toBeHidden();
+  await settle(page);
+  await stageShot(page, '00-initial.png', false);
+
+  // the Excel template has a Buildings sheet, but the buildings from Rhino are kept unless it is ticked
+  const [template] = await Promise.all([page.waitForEvent('download'), menuAction(page, 'a[href$=".xlsx"]')]);
+  await page.setInputFiles('#importFile', {name: 'program_template.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: fs.readFileSync(await template.path())});
+  const kv = page.locator('#importBody .kv'), use = page.locator('#useSheet');
+  await expect(kv).toContainText('4 (current)');
+  await expect(use).not.toBeChecked();
+  await expect(page.locator('#importBody .opt')).toContainText('instead of the current buildings from campus_massing.3dm');
+  await use.check();
+  await expect(kv).not.toContainText('(current)');
+  await use.uncheck();
+  await expect(kv).toContainText('4 (current)');
+  await page.click('#importOk');
+  await expect(page.locator('#psub')).toHaveText('program_template.xlsx · imported · campus_massing.3dm');
+  await settle(page);
+  await stageShot(page, '00-initial.png', false);
   expect(errors).toEqual([]);
 });
 
@@ -442,7 +529,7 @@ test('toolbar shortcuts and menu', async ({page}) => {
   await expect(page.locator('#toolMenu')).toBeVisible();
   await expect(page.locator('#toolMenu [data-act=import]')).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(page.locator('#toolMenu a[download]')).toBeFocused();
+  await expect(page.locator('#toolMenu [data-act=massing]')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.locator('#toolMenu')).toBeHidden();
   await expect(page.locator('#tools [data-act=menu]')).toBeFocused();

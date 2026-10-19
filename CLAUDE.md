@@ -10,7 +10,7 @@ Interactive massing and stacking diagram for a medical campus program (v0.1 prot
 npm install
 npm run dev       # dev server on :5173 with hot reload (runs `npm run template` first)
 npm run build     # production build into dist/ (runs `npm run template` first)
-npm run template  # regenerate public/templates/program_template.xlsx from the demo
+npm run template  # regenerate public/templates/program_template.xlsx and campus_massing.3dm from the demo
 npm run preview   # serve dist/
 npm run test:visual          # Playwright visual regression test (first run: npx playwright install chromium)
 npm run test:visual:update   # re-record baselines after an intended change
@@ -22,6 +22,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of the stage. Three steps also get full-page shots.
   - `stageShot()` clips stage screenshots to the free area between the floating side panels, 24px clear of their shadows. The panels' content is covered by the text snapshots and their look by the full-page shots. Canvas drags in the spec start right of the left panel.
   - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file
+  - **Rhino tests:** `tests/massing-fixture.js` builds a fictional `.3dm` of the demo in memory with rhino3dm (metres, turned 20°, each building modelled a different way, plus context, a site outline and a hidden box); the import must list the expected rows and notes and then match `00-initial.png`. A second test round-trips the downloadable example, then imports the Excel template and checks the Rhino buildings are kept.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Printed report:** prints from the ☰ menu, then checks the report text in print media (the date comes from a fixed clock), the page per building and the view picture. The stage must still match `00-initial.png` afterwards. A second print after edits must show the over-capacity level and the tray. The test fires the print events itself, because Chromium ignores repeated `print()` calls that have no user gesture.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, the Labels and SF settings (shared by every view, also in a small window), the shortcuts' guard while typing, and the ☰ menu from the keyboard. No screenshots.
@@ -34,7 +35,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   The scenario relies on demo ids (`tower`, `opp`, `cup`, `inf`, `amb`) and label names. If the demo data or UI changes on purpose, update the scenario or re-record the baselines, and review the diffs first. Baselines are macOS-specific (`*-darwin.*`).
 
 - **Deploy:** every push to `main` runs `.github/workflows/pages.yml`, which runs `npm ci` and `npm run build`, then publishes `dist/` to GitHub Pages at https://hongyyu.github.io/3d-interactive-building-model/. `vite.config.js` uses `base: './'` so asset paths work under that subpath. Only `dist/` is served. Static files that must ship as-is go in `public/`. `public/templates/` is generated, not committed.
-- **Roadmap:** `FEATURE_PLAN.md` describes the planned phases: CSV/XLSX program import, layout options and compare, JPEG/CSV export, Rhino `.3dm` import and vertical circulation. Upgrading Three.js beyond r128 is a Phase 3 task. Until then, stick to the r128 API, and import any addons from `three/examples/jsm/...` of 0.128.0.
+- **Roadmap:** `FEATURE_PLAN.md` describes the planned phases: CSV/XLSX program import, layout options and compare, JPEG/CSV export, Rhino `.3dm` import (rectangular masses are done; irregular floor plates are not) and vertical circulation. Upgrading Three.js beyond r128 is a Phase 3 task. Until then, stick to the r128 API, and import any addons from `three/examples/jsm/...` of 0.128.0.
 - **Data privacy constraint:** the repo and the Pages site are public. `src/data/demo.js` must hold only the fictional demo program, so never commit real client data. Test fixtures must be fictional too. User files are parsed in the browser and never uploaded. There is no backend.
 
 ## Architecture
@@ -67,9 +68,17 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - It returns `{project, summary, errors, warnings}`. Errors block the import, and warnings are per row.
 - Imported ids are generated (`d1…`, `b1…`, `c1…`). Colours from files are validated as hex before they reach `style` attributes.
 - The dialog shows the summary and calls `openProject` only on "Replace project". Import replaces the whole project; there is no merge.
+- `readProgramFile(file, keepBuildings)` ignores the Buildings sheet when `keepBuildings` is set. The dialog sets it by default when the current buildings came from Rhino (`PROJECT.massing`), and the "Use its Buildings sheet" box re-reads the file without it.
 - The dialog's `close` event arrives a task later, so the handler ignores it when the next import has already reopened the dialog.
 
-**Template** (`scripts/build-template.mjs`): ExcelJS (a dev dependency) writes the template from `DEMO`, with dropdowns, number checks and an Instructions sheet. Its sheet and column names must stay in step with `COLS` in the importer.
+**Rhino massing** (`data/massing.js`, `ui/importDialog.js`): `readMassingFile(file)` lazy-loads rhino3dm (`rhino3dm.module.js`, with `locateFile` pointing at the `?url` import of its 2.7 MB `.wasm`).
+- Parts: visible Breps, Extrusions, Meshes, closed planar curves and block instances (resolved through their definitions, nested up to 8 deep). Hidden objects and layers, open curves, points, text and SubDs are left out.
+- The largest rectangular part sets an angle (minimum-area rectangle of its hull); the whole model is turned by it, so the buildings are axis-aligned. Rhino X/Y become x/−z, lengths go to feet, and a model over 2,000 ft from the origin is moved there.
+- Parts whose plan boxes overlap by at least half of the smaller (and the smaller is at least a fifth of the larger) are one building (union-find). A building's level count comes from User Text (`levels` / `floor_to_floor` on the object or layer, lengths in model units), else floor plates (flat parts at distinct elevations) or stacked floor boxes (≤ 30 ft each, contiguous), else its height over 15 ft. Flat singletons and masses under 400 SF or 8 ft are skipped.
+- Each mass is `{name, layer, w, d, h, x, z, levels, fh, src, on, notes}`. Names: object name, block name, a non-generic layer name, else `Building N`; duplicates are numbered. Masses on context-like layers start unticked.
+- The dialog (`.dlg.wide`) lists the masses with a tick, a name, a level count (height stays, so `fh = h / levels`) and "Departments from", which defaults to the current building of the same name; one building feeds at most one mass. `massingProject()` builds the project from the live program (`CATS`, `DEPTS`, `state.levels`, `state.unassigned`): departments keep their levels on the mapped mass, and levels above its count, unmapped buildings and the old tray go to the tray. The project gets `massing: <file name>`.
+
+**Template** (`scripts/build-template.mjs`): ExcelJS (a dev dependency) writes the template from `DEMO`, with dropdowns, number checks and an Instructions sheet. Its sheet and column names must stay in step with `COLS` in the importer. `scripts/build-massing.mjs` writes `campus_massing.3dm`, one named box per demo building with User Text `levels` and `floor_to_floor`, so it imports back exactly.
 
 **Start screen** (`ui/welcome.js`): `#welcome` is visible in the markup and `#app` starts `inert`, so the app never flashes before boot.
 - The illustration is an isometric SVG generated from the demo's first building. It is animated purely in CSS: `.wf` drops each floor in, `.wx` explodes the stack, and both run on the same 10 s loop.
@@ -154,7 +163,7 @@ Axon and Stacking get their near-orthographic look from a tiny FOV (4° and 0.2�
 
 **Toolbar** (header, `index.html` + `ui/controls.js`): two Excalidraw-style islands, `#modes` (view modes) and `#tools`. Each `.tool` is an icon button with a `<kbd>` shortcut hint and a CSS tooltip from `data-tip`.
 - The islands are 38px tall but take 32px of layout (`margin-block:-3px`), so the header keeps the height of the brand block. A taller header would shrink the stage and change every stage screenshot.
-- Import program…, Download template, Print report (PDF)… and Reset layout live in the ☰ menu (`#toolMenu`); `menuAction()` in the spec opens it. Its keyboard handling and outside-click closing are in `bindToolbarUI()`.
+- Import program…, Import Rhino massing…, Download template, Download Rhino example, Print report (PDF)… and Reset layout live in the ☰ menu (`#toolMenu`); `menuAction()` in the spec opens it. Its keyboard handling and outside-click closing are in `bindToolbarUI()`.
 - Single-key shortcuts are in the `KEYS` map in `ui/controls.js`. `L` (laser) stays in `ui/laser.js`. Shortcuts are ignored with a modifier key, while typing in a field, while a dialog is open, and while the start screen covers the app.
 - A tool's tooltip is hidden after it is clicked (class `tipoff`) until the pointer leaves it, so it doesn't sit over the stage.
 

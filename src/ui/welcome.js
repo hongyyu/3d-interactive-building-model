@@ -2,7 +2,7 @@ import {DEMO} from '../data/demo.js';
 import {PROJECT} from '../data/project.js';
 import {$,RM} from '../util.js';
 import {openProject} from './actions.js';
-import {chooseImportFile} from './importDialog.js';
+import {chooseImportFile,chooseMassingFile} from './importDialog.js';
 
 /* Start screen shown on load: what the tool does, an animated stacking illustration and the two
    ways in, the demo campus or an imported Excel program. #app is inert while it is open, and
@@ -85,6 +85,7 @@ export function bindWelcome(){
       closeWelcome();
     }
     else if(a==='import') chooseImportFile();
+    else if(a==='massing') chooseMassingFile();
     else if(a==='back') closeWelcome();
   });
   // an import started here closes the start screen once the user confirms "Replace project"

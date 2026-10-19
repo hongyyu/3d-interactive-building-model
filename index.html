@@ -55,8 +55,14 @@
           <button type="button" role="menuitem" data-act="import" title="Load a program from Excel (.xlsx) or CSV">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 12.6V3.4M6.6 6.8 10 3.4l3.4 3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Import program…
           </button>
+          <button type="button" role="menuitem" data-act="massing" title="Replace the buildings with the masses in a Rhino model (.3dm). The program stays.">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6 16.6 6.3v7.4L10 17.4l-6.6-3.7V6.3zM3.4 6.3 10 10l6.6-3.7M10 10v7.4"/></svg>Import Rhino massing…
+          </button>
           <a role="menuitem" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4v9.2M6.6 9.2 10 12.6l3.4-3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Download template
+          </a>
+          <a role="menuitem" href="templates/campus_massing.3dm" download title="Rhino model (.3dm) of the demo campus: one named box per building">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4v9.2M6.6 9.2 10 12.6l3.4-3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Download Rhino example
           </a>
           <button type="button" role="menuitem" data-act="print" title="Every building, level and department on printable pages. Choose Save as PDF in the print dialog.">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 7.4v-4h8v4M6 14H4.8a1.4 1.4 0 0 1-1.4-1.4V8.8a1.4 1.4 0 0 1 1.4-1.4h10.4a1.4 1.4 0 0 1 1.4 1.4v3.8a1.4 1.4 0 0 1-1.4 1.4H14M6 11.6h8v5H6z"/></svg>Print report (PDF)…<kbd id="printKey">Ctrl+P</kbd>
@@ -92,6 +98,7 @@
   </div>
 </div>
 <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+<input type="file" id="massFile" accept=".3dm" hidden>
 <dialog class="cpanel" id="colorPanel" aria-labelledby="cpTitle" tabindex="-1">
   <div class="cphead">
     <div><p class="eyebrow" id="cpKind"></p><h2 class="cptitle" id="cpTitle"></h2></div>
@@ -113,7 +120,7 @@
       <h1 class="wtitle rise" id="wTitle" style="--d:1">3D Interactive Building Model</h1>
       <p class="wlede rise" style="--d:2">Turn a department program into a 3D stacking diagram. Move departments between floors, keep floor plates within capacity, and present the result to your client.</p>
       <ol class="wsteps">
-        <li class="rise" style="--d:3"><b>01</b><div><h2>Load a program</h2><p>Departments and areas from an Excel workbook or CSV, or the fictional demo campus.</p></div></li>
+        <li class="rise" style="--d:3"><b>01</b><div><h2>Load a program</h2><p>Departments and areas from an Excel workbook or CSV, building masses from a Rhino model, or the fictional demo campus.</p></div></li>
         <li class="rise" style="--d:4"><b>02</b><div><h2>Stack it</h2><p>Drag departments between levels and add levels as the design grows. A floor that is over capacity turns red.</p></div></li>
         <li class="rise" style="--d:5"><b>03</b><div><h2>Present it</h2><p>Switch between 3D Massing, Axon and Stacking, and guide the room with the red laser pointer.</p></div></li>
       </ol>
@@ -121,7 +128,7 @@
         <button type="button" class="wbtn primary" data-act="demo"><span>Explore the demo</span><small id="wDemoMeta"></small></button>
         <button type="button" class="wbtn" data-act="import"><span>Import Excel program</span><small>.xlsx or .csv file</small></button>
       </div>
-      <p class="note wfine rise" style="--d:7">Files are read in your browser and never uploaded. Need the format? <a href="templates/program_template.xlsx" download>Download the Excel template</a>.</p>
+      <p class="note wfine rise" style="--d:7">Files are read in your browser and never uploaded. Need the format? <a href="templates/program_template.xlsx" download>Download the Excel template</a>. Have a Rhino model? <button type="button" data-act="massing">Import its masses (.3dm)</button>.</p>
       <button type="button" class="link" data-act="back" id="welcomeBack" hidden>Back to the model</button>
     </div>
     <figure class="wart" aria-hidden="true">

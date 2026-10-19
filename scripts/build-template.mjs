@@ -34,7 +34,7 @@ info.getColumn(1).width = 110;
   ['3D Interactive Building Model: program template', {bold: true, size: 14}],
   [''],
   ['How to use', {bold: true}],
-  ['1. Buildings sheet: one row per building.'],
+  ['1. Buildings sheet: one row per building. Not needed when the buildings come from a Rhino model (see below).'],
   ['2. Categories sheet (optional): one row per category, with a hex colour such as #E0554E.'],
   ['3. Program sheet: one row per department.'],
   ['4. In the app, choose "Import program…" from the ☰ menu and pick this file. It is read in your browser and never uploaded.'],
@@ -52,6 +52,11 @@ info.getColumn(1).width = 110;
   ['Buildings sheet', {bold: true}],
   ['Building*: unique name.  Width* and Depth*: floor plate in ft.  Floor-to-floor*: in ft.  Levels*: number of floors.'],
   ['Site X and Site Z: position of the building centre on the site plan, in ft. Leave both blank to line buildings up in a row.'],
+  [''],
+  ['Buildings from Rhino', {bold: true}],
+  ['Choose "Import Rhino massing…" from the ☰ menu to take the buildings from a .3dm model instead of the Buildings sheet.'],
+  ['Name each mass in Rhino (object name or layer name) like the Building column here, and its departments land on it.'],
+  ['Once the buildings come from Rhino, importing this workbook keeps them; its Buildings sheet is used only if you tick that option.'],
 ].forEach(([text, font]) => { const row = info.addRow([text]); if (font) row.font = font; });
 
 // Program

@@ -112,6 +112,20 @@ Shortcuts are ignored while you type in a field or while a dialog is open. Each 
 
 Departments without a building or level wait in the **Unassigned** tray. **Reset layout** returns to the imported layout, and **Load demo project** (left panel) brings back the demo.
 
+## Use your Rhino massing
+
+The buildings don't have to come from Excel. Choose **Import Rhino massing…** from the ☰ menu (or **Import its masses (.3dm)** on the start screen) and pick a `.3dm` file. **Download Rhino example** in the same menu gives the demo campus as a Rhino model to try it with.
+
+- **What it reads:** every visible closed polysurface, extrusion, mesh or block. Parts that overlap in plan make one building, so a single mass, a stack of floor boxes, or a mass with floor plates all work. Hidden layers, flat site outlines and small objects are left out. Units are converted to feet, and a model turned on its site is turned to line up with the grid.
+- **Each building** becomes a rectangular floor plate (its footprint's bounding rectangle). Its levels come from User Text `levels` or `floor_to_floor` on the object or its layer, else from its floor boxes or plates, else from its height at 15 ft per floor.
+- **The dialog** lists each mass: untick the ones to leave out (masses on layers such as *Context* or *Site* start unticked), rename it, change its level count (its height stays), and pick the building whose departments it takes over. A mass named in Rhino (object or layer name) like a building in your program is matched for you.
+- **Your program stays:** departments keep their levels on the matched masses; the rest wait in the Unassigned tray. Importing an Excel program afterwards keeps the Rhino buildings, unless you tick **Use its Buildings sheet**.
+
+Buildings are boxes for now: an L-shaped or turned mass gets its bounding rectangle (the dialog says so), and every level uses the whole footprint. True floor plate shapes are planned (see `FEATURE_PLAN.md`).
+
+> [!NOTE]
+> **Your data stays on your computer.** Files are read in the browser and never uploaded; there is no server. Keep real client data out of this repo: the bundled demo (`src/data/demo.js`) and the test fixtures must stay fictional.
+
 ## Development
 
 ### Run locally
@@ -125,12 +139,12 @@ npm run build     # production build into dist/
 npm run preview   # serve dist/ locally
 ```
 
-`dev` and `build` first regenerate the Excel template (`npm run template`).
+`dev` and `build` first regenerate the Excel template and the Rhino example (`npm run template`).
 
 | Path | What's there |
 |---|---|
 | `src/` | The app: `data/` (demo and importer), `layout/` (stacking), `scene/` (Three.js), `ui/` (panels and input) |
-| `scripts/build-template.mjs` | Builds the Excel template from the demo |
+| `scripts/build-template.mjs`, `scripts/build-massing.mjs` | Build the Excel template and the Rhino example from the demo |
 | `tests/` | Visual regression test, baselines and fixtures |
 | `CLAUDE.md` | Architecture notes |
 | `FEATURE_PLAN.md` | Roadmap |
@@ -149,6 +163,8 @@ npm run test:visual               # build, then run every test in headless Chrom
 | **Demo scenario** | Replays 32 steps: view modes, selection, area edits, dragging, camera moves, reset, present mode and a narrow window. Each step compares a stage screenshot and a text snapshot of the panels with the baselines. |
 | **Template round trip** | Downloads the template and imports it back; the model must render exactly like the demo. |
 | **CSV import with problems** | Imports `tests/fixtures/program-with-issues.csv` and checks the import summary and the Unassigned tray. |
+| **Rhino massing import** | Imports a fictional Rhino model of the demo campus (in metres, turned 20°, each building modelled differently) and checks the dialog's rows and notes; the model must render exactly like the demo. |
+| **Rhino example round trip** | Downloads the Rhino example and imports it back, then imports the Excel template and checks that the Rhino buildings are kept. |
 | **Rejected file** | A file with the wrong columns can't be loaded. |
 | **Start screen, levels and laser** | Imports from the start screen and returns to it, adds and removes levels, resets the layout, and checks that the laser draws only while dragging. |
 | **Printed report** | Checks the report's text and pages, then overfills a level, sends a department to the tray, and checks that a second print shows both. |

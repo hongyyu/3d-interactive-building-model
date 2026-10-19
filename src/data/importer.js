@@ -1,8 +1,9 @@
 /* Reads a program workbook (.xlsx / .xls with Program, Buildings and Categories sheets) or a
    single-sheet .csv (Program only) into a project object; see data/project.js for its shape.
-   Sheets that are missing fall back to the current project's buildings and categories.
+   Sheets that are missing fall back to the current project's buildings and categories, and so does
+   the Buildings sheet when keepBuildings is set (the dialog sets it for buildings from Rhino).
    SheetJS is loaded on first use, and the file never leaves the browser. */
-import {CATS,BUILDINGS} from './project.js';
+import {PROJECT,CATS,BUILDINGS} from './project.js';
 import {hexColor} from '../util.js';
 
 const PALETTE=['#e0554e','#5fb27f','#26a5a0','#5b7fe0','#eeab3d','#8d96a6','#a478d4','#d46f9d','#7a9a3a','#c98a4b'];
@@ -73,7 +74,7 @@ function findSheet(wb,name){
 }
 
 /* returns {project, summary, errors, warnings}; project is null when errors block the import */
-export async function readProgramFile(file){
+export async function readProgramFile(file,keepBuildings){
   const XLSX=await import('xlsx');
   const errors=[], warnings=[];
   const isBook=!/\.csv$/i.test(file.name), buf=await file.arrayBuffer();
@@ -109,7 +110,7 @@ export async function readProgramFile(file){
 
   // buildings: keyed b1, b2...
   const buildings=[], bByName={};
-  const bName=isBook&&findSheet(wb,'buildings');
+  const sheetName=isBook&&findSheet(wb,'buildings'), bName=!keepBuildings&&sheetName;
   if(bName){
     const rows=readTable(XLSX,wb.Sheets[bName],'buildings',errors);
     if(!rows) return fail();
@@ -170,7 +171,9 @@ export async function readProgramFile(file){
   if(unassigned.length) warnings.unshift(`${unassigned.length} department${unassigned.length>1?'s have':' has'} no building or level and will wait in the Unassigned tray.`);
 
   const project={title:'3D Interactive Building Model',sub:file.name+' · imported',cats,depts,buildings,unassigned};
+  // kept buildings from Rhino stay marked as such
+  if(!bName&&PROJECT.massing){ project.massing=PROJECT.massing; project.sub+=' · '+PROJECT.massing; }
   const summary={file:file.name,departments:nDepts,totalSF,buildings:buildings.length,
-    placed:nDepts-unassigned.length,unassigned:unassigned.length,keptBuildings:!bName,keptCategories:!catName};
+    placed:nDepts-unassigned.length,unassigned:unassigned.length,keptBuildings:!bName,buildingsSheet:!!sheetName,keptCategories:!catName};
   return {project,summary,errors,warnings};
 }
