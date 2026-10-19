@@ -38,6 +38,7 @@ button,input,select{font:inherit;color:inherit}
 .tool:hover{background:var(--tool-hover)}
 .tool[aria-pressed="true"],.tool[aria-expanded="true"]{background:var(--tool-on);color:var(--tool-on-ink)}
 .tool[aria-pressed="true"] kbd{color:var(--tool-on-ink);opacity:.6}
+.tool[data-act=labels][aria-pressed="false"]+.tool[data-act=sf]{opacity:.45}
 .tool[data-act=laser] .dot{fill:var(--laser);stroke:none}
 .tool[data-act=laser][aria-pressed="true"]{background:var(--laser-on);color:var(--laser)}
 .tool[data-act=laser][aria-pressed="true"] kbd{color:var(--laser)}
@@ -179,8 +180,10 @@ button,input,select{font:inherit;color:inherit}
 #gl{display:block;width:100%;height:100%;touch-action:none}
 #overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .lbl{position:absolute;left:0;top:0;transform-origin:0 0;display:none;text-align:center;color:#10151d;overflow:hidden;white-space:nowrap}
-.lbl b{display:block;font:600 11px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis}
-.lbl span{display:block;font:400 10px/1.2 var(--mono);opacity:.78}
+/* overlay text sizes follow the zoom through --tz (set on #overlay by scene/overlay.js); a label shrunk
+   to fit a thin face also has its own --ls */
+.lbl b{display:block;font:600 calc(11px*var(--tz,1)*var(--ls,1))/1.1 var(--ui);overflow:hidden;text-overflow:ellipsis}
+.lbl span{display:block;font:400 calc(10px*var(--tz,1)*var(--ls,1))/1.1 var(--mono);opacity:.78}
 .lbl.inv{color:#fff}
 /* colour panel: a non-modal dialog beside the side panel; --hue and --cur are set by ui/colorPanel.js */
 .cpanel{position:fixed;inset:auto;left:0;top:0;z-index:25;margin:0;width:256px;max-height:calc(100vh - 16px);overflow:auto;padding:12px 12px 14px;border:0;border-radius:12px;background:#fff;color:var(--ink);box-shadow:var(--menu-shadow);display:flex;flex-direction:column;gap:10px}
@@ -211,14 +214,15 @@ button,input,select{font:inherit;color:inherit}
 .cpreset:hover{background:#f3f5f8}
 .cpreset i{width:12px;height:12px;border-radius:3px;flex:none}
 .lbl.chip{background:#fff;border:1px solid var(--line-2);border-radius:5px;padding:3px 7px;box-shadow:0 4px 12px rgba(20,25,35,.12)}
-.btag{position:absolute;left:0;top:0;display:none;pointer-events:auto;cursor:pointer;background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:5px 8px;white-space:nowrap;font:600 11.5px/1.2 var(--ui);color:var(--ink);box-shadow:0 4px 12px rgba(20,25,35,.08)}
-.btag small{display:block;font:400 10px/1.3 var(--mono);color:var(--ink-3)}
+.btag{position:absolute;left:0;top:0;display:none;pointer-events:auto;cursor:pointer;background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:5px 8px;white-space:nowrap;font:600 calc(11.5px*var(--tz,1))/1.2 var(--ui);color:var(--ink);box-shadow:0 4px 12px rgba(20,25,35,.08)}
+.btag small{display:block;font:400 calc(10px*var(--tz,1))/1.3 var(--mono);color:var(--ink-3)}
 .btag.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .btag.on small{color:#b9c1cf}
 .btag.off{visibility:hidden}
-.ftag{position:absolute;left:0;top:0;display:none;white-space:nowrap;font:400 10.5px/1 var(--mono);color:var(--ink-2)}
-.ftag b{font:700 11px var(--ui);color:var(--ink);margin-right:4px}
+.ftag{position:absolute;left:0;top:0;display:none;white-space:nowrap;font:400 calc(10.5px*var(--tz,1))/1 var(--mono);color:var(--ink-2)}
+.ftag b{font:700 calc(11px*var(--tz,1)) var(--ui);color:var(--ink);margin-right:4px}
 .ftag.over{color:var(--alert)}
+.ftag.pin{padding:3px 6px;border-radius:5px;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(20,25,35,.12)}
 .status{position:absolute;top:12px;left:calc(50% + (var(--inset-l,0px) - var(--inset-r,0px))/2);transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:6px;padding:7px 12px;font:500 11.5px/1.2 var(--mono);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .status.over{background:var(--alert)}
 .hint{position:absolute;left:calc(var(--inset-l,0px) + 14px);bottom:10px;right:calc(var(--inset-r,0px) + 14px);font:400 10.5px/1.3 var(--mono);color:var(--ink-3);pointer-events:none}

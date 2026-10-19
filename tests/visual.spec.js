@@ -374,20 +374,59 @@ test('printed report covers every building, level and department', async ({page}
 test('toolbar shortcuts and menu', async ({page}) => {
   const errors = await open(page);
   const pressed = sel => expect(page.locator(sel)).toHaveAttribute('aria-pressed', 'true');
-  // 1/2/3 switch the view mode, T toggles labels, P presents
+  // 1/2/3 switch the view mode
   await page.keyboard.press('2');
   await pressed('#modes [data-mode=axon]');
   await page.keyboard.press('3');
   await pressed('#modes [data-mode=stack]');
+  // T (labels) and S (SF on labels) apply to every view: switched off in one, they stay off in the others
+  const labels = page.locator('#tools [data-act=labels]'), sf = page.locator('#tools [data-act=sf]');
+  const shown = page.locator('#overlay .lbl:visible'), sfLines = page.locator('#overlay .lbl span:visible');
   await page.keyboard.press('t');
-  await expect(page.locator('#tools [data-act=labels]')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('#overlay .lbl:visible')).toHaveCount(0);
+  await expect(labels).toHaveAttribute('aria-pressed', 'false');
+  await expect(shown).toHaveCount(0);
+  for (const key of ['2', '1']) {
+    await page.keyboard.press(key);
+    await expect(labels).toHaveAttribute('aria-pressed', 'false');
+    await expect(shown).toHaveCount(0);
+  }
   await page.keyboard.press('t');
   await pressed('#tools [data-act=labels]');
+  await pressed('#tools [data-act=sf]');
+  await expect(sfLines.first()).toBeVisible();
+  await page.keyboard.press('s');
+  await expect(sf).toHaveAttribute('aria-pressed', 'false');
+  for (const key of ['3', '2', '1']) {
+    await page.keyboard.press(key);
+    await expect(sf).toHaveAttribute('aria-pressed', 'false');
+    await expect(shown.first()).toBeVisible();
+    await expect(sfLines).toHaveCount(0);
+  }
+  await sf.click();
+  for (const key of ['1', '2', '3']) {
+    await page.keyboard.press(key);
+    await pressed('#tools [data-act=sf]');
+    await expect(sfLines.first()).toBeVisible();
+  }
+  // P presents
   await page.keyboard.press('p');
   await expect(page.locator('#app')).toHaveClass(/present/);
   await page.keyboard.press('p');
   await expect(page.locator('#app')).not.toHaveClass(/present/);
+  // in a smaller window Axon's floors are too thin for two full-size lines: the SF line still shows,
+  // on smaller text, and S still takes it away and brings it back
+  const shrunk = () => page.evaluate(() => [...document.querySelectorAll('#overlay .lbl')].some(l => l.style.display !== 'none' &&
+    getComputedStyle(l.lastChild).display !== 'none' && parseFloat(l.style.getPropertyValue('--ls')) < 1));
+  await page.setViewportSize({width: 846, height: 946});
+  await page.keyboard.press('2');
+  await expect(sfLines.first()).toBeVisible();
+  await expect.poll(shrunk).toBe(true);
+  await page.keyboard.press('s');
+  await expect(sfLines).toHaveCount(0);
+  await expect(page.locator('#overlay .lbl:visible').first()).toBeVisible();
+  await page.keyboard.press('s');
+  await expect(sfLines.first()).toBeVisible();
+  await page.setViewportSize({width: 1440, height: 900});
   await page.keyboard.press('1');
   await pressed('#modes [data-mode=mass]');
   // shortcuts are ignored while typing in a field
@@ -524,7 +563,7 @@ test('colour panel', async ({page}) => {
   await right.locator('.title').click();
   await expect(panel).toBeHidden();
   await settle(page);
-  await expect(page.locator('#overlay .lbl', {hasText: 'Critical Care (ICU)'})).toHaveClass('lbl inv');
+  await expect(page.locator('#overlay .lbl', {hasText: 'Critical Care (ICU)'})).toHaveClass(/\binv\b/);
   await stageShot(page, 'recolor-dept.png');
 
   // "Use category colour" drops it again

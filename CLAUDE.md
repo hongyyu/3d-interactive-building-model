@@ -21,10 +21,10 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - **Visual test** (`tests/visual.spec.js`): builds the app and serves `dist/` on :4174.
   - **Demo scenario:** replays 32 steps on the demo program. Each step checks an exact text snapshot of `#left`, `#right` and the overlay labels, plus a screenshot of the stage. Three steps also get full-page shots.
   - `stageShot()` clips stage screenshots to the free area between the floating side panels, 24px clear of their shadows. The panels' content is covered by the text snapshots and their look by the full-page shots. Canvas drags in the spec start right of the left panel.
-  - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file.
+  - **Import tests:** a template round trip (download, import, then compare against the demo's `00-initial.png`), a CSV with problems (`tests/fixtures/program-with-issues.csv`), and a rejected file
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Printed report:** prints from the ☰ menu, then checks the report text in print media (the date comes from a fixed clock), the page per building and the view picture. The stage must still match `00-initial.png` afterwards. A second print after edits must show the over-capacity level and the tray. The test fires the print events itself, because Chromium ignores repeated `print()` calls that have no user gesture.
-  - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
+  - **Toolbar shortcuts and menu:** keyboard shortcuts, the Labels and SF settings (shared by every view, also in a small window), the shortcuts' guard while typing, and the ☰ menu from the keyboard. No screenshots.
   - **Colour panel:** recolours a category from the palette, the saturation/brightness area and the hex field, then a department, and checks Escape, outside clicks and "Use category colour". One full-page shot shows the open panel. After "Reset colours" the stage must match `00-initial.png`.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
@@ -67,6 +67,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - It returns `{project, summary, errors, warnings}`. Errors block the import, and warnings are per row.
 - Imported ids are generated (`d1…`, `b1…`, `c1…`). Colours from files are validated as hex before they reach `style` attributes.
 - The dialog shows the summary and calls `openProject` only on "Replace project". Import replaces the whole project; there is no merge.
+- The dialog's `close` event arrives a task later, so the handler ignores it when the next import has already reopened the dialog.
 
 **Template** (`scripts/build-template.mjs`): ExcelJS (a dev dependency) writes the template from `DEMO`, with dropdowns, number checks and an Instructions sheet. Its sheet and column names must stay in step with `COLS` in the importer.
 
@@ -112,28 +113,32 @@ Mutating properties (for example `drag.ov = …` or `viewT.s = …`) works from 
 
 `relayout()` only sets targets. `relayout(true)` also snaps the current values. After any state change, call `relayout(...)` and then `refreshUI()`. The functions in `ui/actions.js` already do this.
 
-**View modes** (`mass`, `axon`, `stack`) share one scene and one `PerspectiveCamera`. They differ only in data:
-- `EXPLODE` multiplies the floor pitch.
+**View modes** (`mass`, `axon`, `stack`; `stack` is labelled "Stacking" in the UI) share one scene and one `PerspectiveCamera`. They differ only in data:
+- `EXPLODE` multiplies the floor pitch. It is 0 for Stacking as well as 3D Massing, so Stacking draws its levels without gaps.
 - `GRIDOP` sets grid opacity.
 - `targetView()` sets the camera.
 
-Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and 3.2°) and a large camera distance, not from an OrthographicCamera. Only the selected building (`state.sel`) shows department meshes, except in the campus overview. The other buildings render as plain shells and fade out outside `mass` mode.
+Axon and Stacking get their near-orthographic look from a tiny FOV (4° and 0.2°) and a large camera distance, not from an OrthographicCamera. Stacking's 0.2° makes it a flat elevation: no side or top face shows. A focused building in 3D Massing is framed at 1.5× its plan diagonal (at least 16 units), close enough for two-line labels on its floors. Only the selected building (`state.sel`) shows department meshes, except in the campus overview. The other buildings render as plain shells and fade out outside `mass` mode.
 
 **Campus overview** (`isOverview()` in `state.js`: `mass` mode with `state.focus === 'campus'`): the demo and every imported project open here.
-- Every building shows its department meshes and no building tag is highlighted. `state.sel` still names a building: the one Axon, Section Stack and the Unassigned tray use.
+- Every building shows its department meshes and no building tag is highlighted. `state.sel` still names a building: the one Axon, Stacking and the Unassigned tray use.
 - Only the hovered or selected department gets a label. Hovering a department also glows its whole building.
 - A click on a department, a building tag or a card focuses that building (`state.focus = 'building'`). A click on a department also selects it, and dragging orbits instead of moving departments.
 - The right panel shows campus totals, the tray and "Program by building". "Program by category" in the left panel covers the whole campus.
-- `showCampus()` (the "Full campus" card) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Section Stack and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
+- `showCampus()` (the "Full campus" card) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Stacking and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
 
 **Dragging** (`ui/pointer.js`): while a drag is in progress, `drag.ov` holds a preview placement `{b, id, f, idx}`. `levelsWithOverride()` applies it during layout without changing `state.levels`. `commitDrag()` writes it to `state.levels`, and `cancelDrag()` (also bound to Escape) discards it. The drag plane is vertical and faces the camera, and the target level comes from the Y position.
 
 **Labels and tags are HTML, not WebGL** (`scene/overlay.js`): department labels (`.lbl`), building tags (`.btag`) and floor tags (`.ftag`) are DOM elements inside `#overlay`. `updateOverlay()` positions them every frame by projecting 3D points to screen space. Any future image export has to redraw them, because they are not part of the canvas.
-- `placeLabels()` puts each department label on the band of the department the camera can actually see: a side face plus whatever strip of top face the level above leaves uncovered. The top level counts the same strip as if a level sat above it, so every label sits on its floor's facade band; only a top-level department with no facade in view (seen end-on) is labelled on its roof. Labels hidden behind another building are dropped. Each label is sheared (`skewY`) to follow the floor edge.
-- Labels never overlap each other or a tag. They are placed in priority order (dragged, selected, hovered, then larger SF), and each one tries name + SF, then name only, then hides. 3D Massing shows names only, chips included; Axon and Section Stack add the SF line.
+- `placeLabels()` puts each department label on the band of the department the camera can actually see: in 3D Massing and Stacking a side face plus whatever strip of top face the level above leaves uncovered. The top level counts the same strip as if a level sat above it, so every label sits on its floor's facade band; only a top-level department with no facade in view (seen end-on) is labelled on its roof. In Axon (`labelRegions()`), a label is centred on one face instead: the side face on every level alike (the uncovered top is partly in the shadow of the level above), then the top (all of the roof on the top level), the end face, and last the combined band. `labelRegion(…, part)` limits a band to the side face (1) or the top strip (2). Labels hidden behind another building are dropped. Each label is sheared (`skewY`) to follow the floor edge.
+- Labels never overlap each other or a tag. They are placed in priority order (dragged, selected, hovered, then larger SF), and each one tries name + SF on two lines, then the two lines shrunk to the band's height (in 5% steps, down to `MIN_FIT` = 0.75, through the label's own `--ls`), then name only, then hides. Label lines have a line height of 1.1 and need 2 px of clearance in their band. Without the shrink step, a small window would show names only in Axon whatever the SF setting, because the side faces get too thin for two full-size lines. The flicker tolerance applies to full-size labels only, so a shrunk label never grows past its face.
+- `state.labels` (Labels, `T`) and `state.sf` (SF on labels, `S`, `toggleSF()` in `ui/actions.js`) are single settings shared by every view mode, chips included. The SF tool dims while labels are off.
+- Floor tags (Axon and Stacking) are centred on their floor's height, left of the plate corner furthest left on screen (picked once per frame at the middle of the column): the back-left corner in Axon, the front-left in Stacking. Zoomed in, a tag that would go under the left panel pins to the free area's edge on a white chip (class `pin`).
+- Overlay text grows with zoom: `textScale()` (`scene/view.js`) is the square root of the zoom past the framing (`view.lb` eases toward `viewT.base`, the framing's size, at the camera's rate), clamped to 1–1.6. `updateOverlay()` sets it as `--tz` on `#overlay` in 2% steps, the CSS font sizes multiply by it, and label sizes are measured at scale 1 and multiplied.
 - Building tags sit just above the building's outline on screen (its highest projected roof corner), centred over the roof, so they don't cover the building. The selected building's tag stays in the free area and pins to its top edge when the building's top is out of view.
 - Building tags follow the same rules. The selected building's tag is placed first and always shows. Other tags are placed after the department labels, nearest first. They hide when the point above their roof is behind another building. Otherwise each tries centred, then shifted left or right, then hides (class `off`, which uses `visibility` so the tag can still be measured).
 - The selected and hovered departments fall back to an upright `.chip` when their label doesn't fit. The dragged department always shows as a chip.
+- A shown label keeps its kind and spot within a few pixels of tolerance (`d.on`), so it doesn't flicker while the camera moves. `retarget()` bumps `reframes` (`scene/view.js`), and the overlay then drops that tolerance, so the labels after a reframe don't depend on the frames before it. This keeps the visual test deterministic: the panels resize after a mode change, which reframes about 60 ms later.
 - Text widths are measured with a canvas and cached per label (`d.nw`, `d.aw`). Call `setLabelHTML(d)` after changing a department's name or area so they are measured again.
 
 **Colours** (`ui/colorPanel.js`): the swatches in "Program by category" (`data-catcolor`) and the department card's Colour field (`#dcol`) open the colour panel `#colorPanel`. It has a saturation/brightness area, a hue slider, a hex field, a fixed palette, the project's own colours, and for a department "Use category colour".
