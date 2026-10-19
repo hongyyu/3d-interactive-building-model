@@ -25,6 +25,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Printed report:** prints from the ☰ menu, then checks the report text in print media (the date comes from a fixed clock), the page per building and the view picture. The stage must still match `00-initial.png` afterwards. A second print after edits must show the over-capacity level and the tray. The test fires the print events itself, because Chromium ignores repeated `print()` calls that have no user gesture.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, their guard while typing, and the ☰ menu from the keyboard. No screenshots.
+  - **Category donut:** hovers a slice and a legend row, then a department in the model, and checks what lights up. Clicking a slice isolates its category, and keyboard focus on a row lights it. One full-page shot shows a hovered slice and its departments glowing.
   - **Colour panel:** recolours a category from the palette, the saturation/brightness area and the hex field, then a department, and checks Escape, outside clicks and "Use category colour". One full-page shot shows the open panel. After "Reset colours" the stage must match `00-initial.png`.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
@@ -95,7 +96,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 **Level rows** (`ui/levels.js`): each row in the right panel has a grip and a ⋯ menu (`#levelMenu`, shared, `position: fixed`).
 - Dragging a grip rewrites `state.levels[bid]` live whenever the drop slot changes, then calls `relayout()`, so the building follows the drag. The panel isn't re-rendered until the drop: rows slide with transforms and are renumbered in place. Escape restores the snapshot taken at the start.
 - Arrow keys on a focused grip call `moveLevel()`. Hovering or dragging a row sets `hotIds` (`state.js`), which `scene/update.js` lights up.
-- `state.panelOpen` (the fold button) hides everything in the right panel below its title row. Arrow-key navigation for both menus is in `ui/menu.js`. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
+- `state.panelOpen` (the fold button) hides everything in the right panel below its title row. `state.buildingsOpen` does the same for the left panel's Buildings section. Arrow-key navigation for both menus is in `ui/menu.js`. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
 
 **Shared mutable variables:** a value that is reassigned across modules is an exported `let`. Only its home module reassigns it, because ES module imports are read-only and assigning to one from another module throws.
 - `drag` and `hoverId` live in `state.js` and change through `setDrag` and `setHoverId`. `INIT_LEVELS` is reassigned only by `initState()`.
@@ -125,7 +126,7 @@ Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and
 - Only the hovered or selected department gets a label. Hovering a department also glows its whole building.
 - A click on a department, a building tag or a card focuses that building (`state.focus = 'building'`). A click on a department also selects it, and dragging orbits instead of moving departments.
 - The right panel shows campus totals, the tray and "Program by building". "Program by category" in the left panel covers the whole campus.
-- `showCampus()` (the "Full campus" card) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Section Stack and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
+- `showCampus()` (the "Full campus" button above the building cards) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Section Stack and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
 
 **Dragging** (`ui/pointer.js`): while a drag is in progress, `drag.ov` holds a preview placement `{b, id, f, idx}`. `levelsWithOverride()` applies it during layout without changing `state.levels`. `commitDrag()` writes it to `state.levels`, and `cancelDrag()` (also bound to Escape) discards it. The drag plane is vertical and faces the camera, and the target level comes from the Y position.
 
@@ -145,6 +146,13 @@ Axon and Section Stack get their near-orthographic look from a tiny FOV (4° and
 - "Reset colours" shows only when `colorsEdited()` and restores `INIT_CAT_COLORS` / `INIT_DEPT_COLORS` from `initState()`. "Reset layout" leaves colours alone.
 - A department darker than relative luminance 0.18 gets white label text (class `inv`). The demo's darkest colour is 0.23, so the demo keeps dark labels.
 - `hexColor()` (`util.js`) parses hex codes for both the panel and the importer.
+
+**Category donut** (`ui/catPie.js`): "Program by category" in the left panel draws a donut above the legend rows, one slice per category with program in scope (the campus or the focused building), in `CATS` order.
+- A category is hot while its slice or legend row is hovered, while its row's button has keyboard focus, or while one of its departments is hovered in the model (`hoverId`). Its slice lifts, the others fade, its row lights, and the centre shows its name, SF and share. Otherwise the centre shows the program total, or the isolated category.
+- `paintPie()` applies this to the rendered donut without rebuilding the panel. `renderLeft()` calls it, and so does `ui/pointer.js` whenever `hoverId` changes. It returns early when nothing changed.
+- A hot slice or row (not a hovered department) also sets `hotCat` (`state.js`), which makes the category's departments glow in `scene/update.js`.
+- Slices carry `data-slice`, not `data-cat`, so `[data-cat=…]` still finds exactly one legend button. A click on either isolates the category.
+- Slices are inset to leave a constant 2px gap between them. The legend rows stay the exact readout and keep the colour swatches.
 
 **Panels** (`ui/panels.js`): `renderLeft()` and `renderRight()` rebuild their `innerHTML` from strings. Pass every program or user string through `esc()`. Clicks are handled in `ui/controls.js` by delegated listeners on `#left`, `#right`, `#overlay`, `#modes` and `#tools`, keyed off `data-b`, `data-dept`, `data-cat`, `data-act` and `data-mode` attributes. New controls should follow the same pattern.
 

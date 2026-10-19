@@ -9,6 +9,7 @@ import {view,viewT,explode,SH,setViewRate} from '../scene/view.js';
 import {planFloor,levelOf,levelsWithOverride,relayout} from '../layout/plan.js';
 import {selectBuilding,selectDept} from './actions.js';
 import {renderRight,refreshUI} from './panels.js';
+import {paintPie} from './catPie.js';
 
 const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
 const pts=new Map();
@@ -103,7 +104,7 @@ export function bindPointer(){
     if(!g){
       if(e.pointerType==='touch')return;
       const h=pick(e.clientX,e.clientY);
-      setHoverId((h&&h.type==='dept')?h.id:null);
+      setHoverId((h&&h.type==='dept')?h.id:null); paintPie();
       canvas.style.cursor=h?(h.type==='dept'&&!isOverview()?'grab':'pointer'):'';
       return;
     }
@@ -152,7 +153,7 @@ export function bindPointer(){
   }
   canvas.addEventListener('pointerup',endPointer);
   canvas.addEventListener('pointercancel',e=>{ cancelDrag(); endPointer(e); });
-  canvas.addEventListener('pointerleave',()=>{ if(!gesture){ setHoverId(null); } });
+  canvas.addEventListener('pointerleave',()=>{ if(!gesture){ setHoverId(null); paintPie(); } });
   canvas.addEventListener('wheel',e=>{
     e.preventDefault(); setViewRate(11);
     viewT.s=clamp(viewT.s*Math.exp(e.deltaY*0.0012),6,160);

@@ -461,6 +461,107 @@ test('levels can be reordered, inserted and removed from the panel', async ({pag
   await expect(page.locator('#right [data-act=fold]')).toHaveAttribute('aria-expanded', 'false');
   await page.click('#right [data-act=fold]');
   await expect(right.locator('.lvls')).toBeVisible();
+
+  // the Buildings fold button hides the building cards, and shows them again
+  const bfold = page.locator('#left [data-act=bfold]');
+  await bfold.click();
+  await expect(page.locator('#left .bcard')).toHaveCount(0);
+  await expect(bfold).toHaveAttribute('aria-expanded', 'false');
+  await expect(bfold).toBeFocused();
+  await bfold.click();
+  await expect(page.locator('#left .bcard')).toHaveCount(4);
+  await expect(page.locator('#left [data-act=campus]')).toBeVisible();
+  await expect(page.locator('#left [data-b=tower]')).toContainText('8 levels');
+  expect(errors).toEqual([]);
+});
+
+/* a point on the left panel's donut slice for category k, halfway through the ring and in the
+   middle of the slice's sweep */
+async function slicePoint(page, k) {
+  const p = await page.evaluate(k => {
+    const b = document.querySelector('#left .pie svg').getBoundingClientRect(), s = b.width / 100, hits = [];
+    for (let a = 0; a < 360; a++) {
+      const t = (a - 90) * Math.PI / 180, x = b.left + (50 + 43.5 * Math.cos(t)) * s, y = b.top + (50 + 43.5 * Math.sin(t)) * s;
+      if (document.elementFromPoint(x, y)?.dataset?.slice === k) hits.push({x, y});
+    }
+    return hits[hits.length >> 1] || null;
+  }, k);
+  if (!p) throw new Error('no slice: ' + k);
+  return p;
+}
+
+test('category donut follows the panel and the model', async ({page}) => {
+  const errors = await open(page);
+  const left = page.locator('#left'), pie = left.locator('.pie');
+  const value = pie.locator('.pmid b'), note = pie.locator('.pmid small');
+  const slice = k => pie.locator(`[data-slice=${k}]`), row = k => left.locator('.lg', {has: page.locator(`[data-cat=${k}]`)});
+  const away = async () => { const b = await page.locator('#gl').boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + 20); };
+
+  // at rest: a slice per category and the campus program total
+  await expect(pie.locator('[data-slice]')).toHaveCount(7);
+  await expect(value).toHaveText('376.0k SF');
+  await expect(note).toHaveText('Program');
+
+  // hovering a slice lights it and its legend row, fades the rest and shows its share
+  let p = await slicePoint(page, 'inpt');
+  await page.mouse.move(p.x, p.y);
+  await expect(pie).toHaveClass('pie lit');
+  await expect(slice('inpt')).toHaveClass('hot');
+  await expect(row('inpt')).toHaveClass(/\bhot\b/);
+  await expect(value).toHaveText('Inpatient Units');
+  await expect(note).toHaveText('71.0k SF · 19%');
+  await settle(page);
+  // the category's departments glow in the model too
+  await expect.soft(page).toHaveScreenshot('category-donut-page.png');
+
+  // a legend row does the same, and leaving the panel clears it
+  await left.locator('[data-cat=amb]').hover();
+  await expect(slice('amb')).toHaveClass('hot');
+  await expect(note).toHaveText('67.0k SF · 18%');
+  await away();
+  await expect(pie).toHaveClass('pie');
+  await expect(left.locator('.lg.hot')).toHaveCount(0);
+  await expect(value).toHaveText('376.0k SF');
+
+  // hovering a department in the model lights its category for the focused building
+  await page.click('#left [data-b=tower]');
+  await page.click('#modes [data-mode=axon]');
+  await settle(page);
+  await expect(value).toHaveText('168.5k SF');
+  const c = await labelCenter(page, 'Imaging');
+  await page.mouse.move(c.x, c.y);
+  await expect(slice('diag')).toHaveClass('hot');
+  await expect(row('diag')).toHaveClass(/\bhot\b/);
+  await expect(value).toHaveText('Diagnostic & Imaging');
+  await expect(note).toHaveText('16.0k SF · 9%');
+  await away();
+  await expect(pie).toHaveClass('pie');
+
+  // clicking a slice isolates its category, and clicking it again clears it
+  p = await slicePoint(page, 'crit');
+  await page.mouse.click(p.x, p.y);
+  await expect(row('crit')).toHaveClass(/\bon\b/);
+  await expect(slice('crit')).toHaveClass(/\bon\b/);
+  await away();
+  await expect(pie).toHaveClass('pie iso');
+  await expect(value).toHaveText('Emergency & Critical Care');
+  p = await slicePoint(page, 'crit');
+  await page.mouse.click(p.x, p.y);
+  await away();
+  await expect(row('crit')).not.toHaveClass(/\bon\b/);
+  await expect(pie).toHaveClass('pie');
+
+  // keyboard focus on a row's button lights it; the swatch before it does not
+  await left.locator('[data-cat=inpt]').focus();
+  await page.keyboard.press('Tab');
+  await expect(left.locator('[data-catcolor=proc]')).toBeFocused();
+  await expect(pie).toHaveClass('pie');
+  await page.keyboard.press('Tab');
+  await expect(slice('proc')).toHaveClass('hot');
+  await page.keyboard.press('Enter');
+  await expect(left.locator('[data-cat=proc]')).toBeFocused();
+  await expect(row('proc')).toHaveClass(/\bon\b/);
+  await expect(slice('proc')).toHaveClass('on hot');
   expect(errors).toEqual([]);
 });
 
