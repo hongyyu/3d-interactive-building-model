@@ -1,5 +1,5 @@
 import {DEPTS} from '../data/project.js';
-import {state,BDEF,drag,hoverId,hotIds,hotCat,isOverview} from '../state.js';
+import {state,BDEF,drag,hoverId,hotIds,isOverview} from '../state.js';
 import {S,SLAB,CLEAR,BASE,GAP} from './constants.js';
 import {B,D,grid,edgeMat,edgeSelMat,dropBox,slotBox,dropInk,dropAlert} from './scene.js';
 import {explode,gridT} from './view.js';
@@ -59,7 +59,7 @@ export function updateScene(k){
     d.mat.opacity=d.dim; d.mat.depthWrite=!tr;
     d.ed.visible=d.dim>0.5;
     const isSel=state.selDept===id;
-    const em=isSel?0.22:(hoverId===id||isDrag||(hotIds&&hotIds.includes(id))||DEPTS[id].c===hotCat?0.12:(d.b===hoverB?0.06:0));
+    const em=isSel?0.22:(hoverId===id||isDrag||(hotIds&&hotIds.includes(id))?0.12:(d.b===hoverB?0.06:0));
     d.mat.emissive.copy(d.base).multiplyScalar(em);
     const em2=isSel?edgeSelMat:edgeMat;
     if(d.ed.material!==em2) d.ed.material=em2;

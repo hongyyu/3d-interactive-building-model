@@ -11,24 +11,15 @@ import {toggleLaser} from './laser.js';
 import {printReport} from './report.js';
 import {menuKeys} from './menu.js';
 import {bindLevels} from './levels.js';
-import {bindPie} from './catPie.js';
 
 /* panel, overlay and toolbar clicks */
 export function bindControls(){
   bindImport();
   bindColorPanel();
-  bindPie();
   leftEl.addEventListener('click',e=>{
     const bc=e.target.closest('[data-b]'); if(bc){ selectBuilding(bc.dataset.b,true); return; }
     const sw=e.target.closest('[data-catcolor]'); if(sw){ editCatColor(sw.dataset.catcolor); return; }
-    // a legend row or a donut slice isolates its category; a row keeps focus through the re-render
-    const cat=e.target.closest('[data-cat],[data-slice]');
-    if(cat){
-      const k=cat.dataset.cat||cat.dataset.slice;
-      state.isolate=(state.isolate===k)?null:k; renderLeft();
-      if(cat.dataset.cat) leftEl.querySelector('[data-cat="'+k+'"]').focus();
-      return;
-    }
+    const cat=e.target.closest('[data-cat]'); if(cat){ state.isolate=(state.isolate===cat.dataset.cat)?null:cat.dataset.cat; renderLeft(); return; }
     if(e.target.closest('[data-act="campus"]')) showCampus();
     else if(e.target.closest('[data-act="demo"]')) loadDemo();
     else if(e.target.closest('[data-act="resetcolors"]')) resetColors();

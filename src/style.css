@@ -95,21 +95,9 @@ button,input,select{font:inherit;color:inherit}
 .meter{display:block;height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
 .meter i{display:block;height:100%;background:var(--ink)}
 .link{margin-top:8px;background:none;border:0;padding:0;color:var(--ink-2);font:500 12px var(--ui);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-/* "Program by category" donut (ui/catPie.js): the hot slice lifts and the rest fade; with a
-   category isolated and nothing hot, the isolated slice stays lit */
-.pie{position:relative;width:136px;height:136px;margin:6px auto 12px}
-.pie svg{display:block;width:100%;height:100%;overflow:visible}
-.pie path{cursor:pointer;transition:opacity .15s,transform .15s;transform-box:view-box;transform-origin:50% 50%}
-.pie .track{fill:var(--line);cursor:default}
-.pie.iso path:not(.on),.pie.lit path:not(.hot){opacity:.25}
-.pie.lit path.hot{opacity:1;transform:scale(1.06)}
-.pmid{position:absolute;inset:24px;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;pointer-events:none}
-.pmid b{font:600 15px/1.15 var(--ui)}
-.pmid.cat b{font-size:11.5px;line-height:1.2;text-wrap:balance}
-.pmid small{font:400 10px/1.2 var(--mono);color:var(--ink-3)}
 .lgl{display:flex;flex-direction:column;gap:2px}
 .lg{display:flex;align-items:center;border-radius:6px}
-.lg:hover,.lg.hot{background:#eff1f5}
+.lg:hover{background:#eff1f5}
 .lg.on{background:#e6e9ef}
 .lg button{flex:none;display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:6px;padding:5px 6px 5px 2px;text-align:left;cursor:pointer}
 .lg button[data-cat]{flex:1;min-width:0}
