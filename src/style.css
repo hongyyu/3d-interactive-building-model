@@ -76,9 +76,13 @@ button,input,select{font:inherit;color:inherit}
 .bcard.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .bcard .bn{font-weight:600;font-size:13px}
 .bcard .bm{font:400 10.5px/1.2 var(--mono);color:var(--ink-3)}
-.bcard.campus{flex-direction:row;align-items:center;gap:10px}
-.bcard.campus>span{display:flex;flex-direction:column;gap:3px;min-width:0}
-.bcard.campus svg{flex:none;width:22px;height:22px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+/* "Full campus": a slim button in the toolbar's style, lit like an active tool in the overview */
+.campus{display:flex;align-items:center;gap:8px;height:30px;margin-bottom:2px;padding:0 10px 0 8px;border:1px solid var(--line-2);border-radius:7px;background:none;color:var(--ink);font:500 12.5px/1 var(--ui);text-align:left;cursor:pointer}
+.campus:hover{background:var(--tool-hover)}
+.campus[aria-pressed="true"]{border-color:transparent;background:var(--tool-on);color:var(--tool-on-ink)}
+.campus svg{flex:none;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.campus em{margin-left:auto;font:400 10.5px/1 var(--mono);font-style:normal;color:var(--ink-3)}
+.campus[aria-pressed="true"] em{color:var(--tool-on-ink);opacity:.6}
 .scope{margin:-4px 0 6px;font:500 12px/1.3 var(--ui);color:var(--ink-2)}
 /* program by building, in the campus overview */
 .pbl{display:flex;flex-direction:column;gap:5px}
@@ -91,9 +95,21 @@ button,input,select{font:inherit;color:inherit}
 .meter{display:block;height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
 .meter i{display:block;height:100%;background:var(--ink)}
 .link{margin-top:8px;background:none;border:0;padding:0;color:var(--ink-2);font:500 12px var(--ui);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* "Program by category" donut (ui/catPie.js): the hot slice lifts and the rest fade; with a
+   category isolated and nothing hot, the isolated slice stays lit */
+.pie{position:relative;width:136px;height:136px;margin:6px auto 12px}
+.pie svg{display:block;width:100%;height:100%;overflow:visible}
+.pie path{cursor:pointer;transition:opacity .15s,transform .15s;transform-box:view-box;transform-origin:50% 50%}
+.pie .track{fill:var(--line);cursor:default}
+.pie.iso path:not(.on),.pie.lit path:not(.hot){opacity:.25}
+.pie.lit path.hot{opacity:1;transform:scale(1.06)}
+.pmid{position:absolute;inset:24px;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;pointer-events:none}
+.pmid b{font:600 15px/1.15 var(--ui)}
+.pmid.cat b{font-size:11.5px;line-height:1.2;text-wrap:balance}
+.pmid small{font:400 10px/1.2 var(--mono);color:var(--ink-3)}
 .lgl{display:flex;flex-direction:column;gap:2px}
 .lg{display:flex;align-items:center;border-radius:6px}
-.lg:hover{background:#eff1f5}
+.lg:hover,.lg.hot{background:#eff1f5}
 .lg.on{background:#e6e9ef}
 .lg button{flex:none;display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:6px;padding:5px 6px 5px 2px;text-align:left;cursor:pointer}
 .lg button[data-cat]{flex:1;min-width:0}
@@ -165,6 +181,13 @@ button,input,select{font:inherit;color:inherit}
 .pfold[aria-expanded="false"] svg{transform:rotate(180deg)}
 .phead .title{margin:0}
 .phead+.kv{margin-top:10px}
+/* a left panel section title with a fold button; the button's negative margins keep the row as
+   tall as a plain title */
+.shead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.shead:last-child{margin-bottom:0}
+.blk .shead h2.h{margin:0}
+.pfold.sm{width:24px;height:24px;margin:-6px -4px -6px 0}
+.pfold.sm svg{width:16px;height:16px}
 .lvl .lh span{font:400 10.5px var(--mono);color:var(--ink-2)}
 .lvl.over .lh span{color:var(--alert);font-weight:500}
 .bar{display:flex;height:12px;border-radius:3px;overflow:hidden;background:repeating-linear-gradient(135deg,#eef0f4 0 4px,#f7f8fa 4px 8px)}

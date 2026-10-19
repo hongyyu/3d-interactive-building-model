@@ -4,11 +4,12 @@ import {CATS,DEPTS,BUILDINGS,UNASSIGNED} from './data/project.js';
    for "Reset layout" and "Reset colours" (a department without its own colour is stored as '') */
 export const BDEF={}, INIT_AREAS={}, INIT_CAT_COLORS={}, INIT_DEPT_COLORS={};
 export let INIT_LEVELS='';
-export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,sf:true,isolate:null,levels:{},unassigned:[],panelOpen:true,picking:null};
+export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,sf:true,isolate:null,levels:{},unassigned:[],panelOpen:true,buildingsOpen:true,picking:null};
 
 /* state.labels / state.sf: whether department labels show, and whether they show their SF line, in
    every view mode alike
    state.panelOpen: whether the right panel shows more than its title row
+   state.buildingsOpen: whether the left panel's Buildings section shows its cards
    state.picking: what the open colour panel edits ('cat:<key>' or 'dept:<id>'), or null */
 
 /* Campus overview: 3D Massing with no building focused. Every building shows its departments and
@@ -44,3 +45,7 @@ export function setHoverId(id){ hoverId=id; }
    panel; only ui/levels.js changes it */
 export let hotIds=null;
 export function setHotIds(ids){ hotIds=ids; }
+/* the category whose departments glow because its slice or legend row is hovered or focused in the
+   left panel; only ui/catPie.js changes it */
+export let hotCat=null;
+export function setHotCat(k){ hotCat=k; }

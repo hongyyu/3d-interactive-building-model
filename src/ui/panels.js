@@ -4,6 +4,7 @@ import {leftEl,rightEl} from '../dom.js';
 import {esc,fmt,fk} from '../util.js';
 import {B} from '../scene/scene.js';
 import {updateFloorTagText} from '../scene/overlay.js';
+import {pieHTML,paintPie} from './catPie.js';
 import {floorStat,levelOf} from '../layout/plan.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 
@@ -13,25 +14,32 @@ function programByCat(bid){
   state.levels[bid].forEach(lv=>lv.forEach(id=>{ const d=DEPTS[id]; by[d.c]=(by[d.c]||0)+d.a; total+=d.a; }));
   return {by:by,total:total};
 }
+const FOLD='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 12.2 10 7.8l4.5 4.4"/></svg>';
 const CAMPUS_ICON='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.6 16.8h14.8M4 16.8V7.2l4-2v11.6M8 8.4l4.2-1.8v10.2M12.2 10.4l3.8 1.4v5"/></svg>';
 export function renderLeft(){
-  const ov=isOverview();
-  let all=0; BUILDINGS.forEach(def=>{ all+=def.w*def.d*state.levels[def.id].length; });
-  let h='<section class="blk"><h2 class="h">Buildings</h2><div class="blist">'+
-    '<button type="button" class="bcard campus'+(ov?' on':'')+'" data-act="campus" aria-pressed="'+ov+'">'+CAMPUS_ICON+
-    '<span><span class="bn">Full campus</span><span class="bm">'+BUILDINGS.length+' buildings · '+fk(all)+' GSF</span></span></button>';
-  BUILDINGS.forEach(def=>{
-    const lv=state.levels[def.id], plate=def.w*def.d, gsf=plate*lv.length;
-    let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
-    const pct=Math.min(100,Math.round(prog/gsf*100));
-    h+='<button type="button" class="bcard'+(!ov&&def.id===state.sel?' on':'')+'" data-b="'+def.id+'"><span class="bn">'+esc(def.name)+'</span>'+
-       '<span class="bm">'+lv.length+' levels · '+fmt(gsf)+' GSF</span><span class="meter"><i style="width:'+pct+'%"></i></span></button>';
-  });
-  h+='</div>'+(PROJECT.demo?'':'<button type="button" class="link" data-act="demo">Load demo project</button>')+'</section>';
+  const ov=isOverview(), open=state.buildingsOpen, tip=open?'Hide buildings':'Show buildings';
+  let h='<section class="blk"><div class="shead"><h2 class="h">Buildings</h2>'+
+    '<button type="button" class="pfold sm" data-act="bfold" aria-expanded="'+open+'" aria-label="'+tip+'" title="'+tip+'">'+FOLD+'</button></div>';
+  if(open){
+    let all=0, cards='';
+    BUILDINGS.forEach(def=>{
+      const lv=state.levels[def.id], gsf=def.w*def.d*lv.length;
+      let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
+      const pct=Math.min(100,Math.round(prog/gsf*100));
+      all+=gsf;
+      cards+='<button type="button" class="bcard'+(!ov&&def.id===state.sel?' on':'')+'" data-b="'+def.id+'"><span class="bn">'+esc(def.name)+'</span>'+
+        '<span class="bm">'+lv.length+' levels · '+fmt(gsf)+' GSF</span><span class="meter"><i style="width:'+pct+'%"></i></span></button>';
+    });
+    // the campus button is a slim toolbar-style button, so it doesn't read as another building
+    h+='<div class="blist"><button type="button" class="campus" data-act="campus" aria-pressed="'+ov+'" title="'+BUILDINGS.length+' buildings · '+fk(all)+' GSF">'+
+      CAMPUS_ICON+'<span>Full campus</span><em>'+fk(all)+' GSF</em></button>'+
+      cards+'</div>'+(PROJECT.demo?'':'<button type="button" class="link" data-act="demo">Load demo project</button>');
+  }
+  h+='</section>';
   // the whole campus in the overview, otherwise the focused building
   const scope=ov?BUILDINGS.map(b=>b.id):[state.sel], by={};
   scope.forEach(bid=>{ const p=programByCat(bid).by; for(const k in p) by[k]=(by[k]||0)+p[k]; });
-  h+='<section class="blk"><h2 class="h">Program by category</h2><p class="scope">'+(ov?'Whole campus':esc(BDEF[state.sel].name))+'</p><div class="lgl">';
+  h+='<section class="blk"><h2 class="h">Program by category</h2><p class="scope">'+(ov?'Whole campus':esc(BDEF[state.sel].name))+'</p>'+pieHTML(by)+'<div class="lgl">';
   // each row: the swatch, which opens the colour panel, then the button that isolates the category
   for(const k in CATS){
     const a=by[k]||0, c=CATS[k];
@@ -41,8 +49,8 @@ export function renderLeft(){
   }
   h+='</div><button type="button" class="link" data-act="resetcolors"'+(colorsEdited()?'':' hidden')+' title="Go back to the colours of the loaded program">Reset colours</button></section>';
   leftEl.innerHTML=h;
+  paintPie();
 }
-const FOLD='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 12.2 10 7.8l4.5 4.4"/></svg>';
 const GRIP='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5.5" r="1.3"/><circle cx="12.5" cy="5.5" r="1.3"/><circle cx="7.5" cy="10" r="1.3"/><circle cx="12.5" cy="10" r="1.3"/><circle cx="7.5" cy="14.5" r="1.3"/><circle cx="12.5" cy="14.5" r="1.3"/></svg>';
 const MORE='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="15" cy="10" r="1.4"/></svg>';
 /* the right panel's title row, with the button that hides everything below it (state.panelOpen) */
