@@ -25,7 +25,6 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
   - **Start screen, levels and laser:** imports from the start screen, adds and removes levels, then checks that the laser draws only while dragging. After "Reset layout", and again after the laser drawing, the stage must match `03-axon.png`.
   - **Printed report:** prints from the ☰ menu, then checks the report text in print media (the date comes from a fixed clock), the page per building and the view picture. The stage must still match `00-initial.png` afterwards. A second print after edits must show the over-capacity level and the tray. The test fires the print events itself, because Chromium ignores repeated `print()` calls that have no user gesture.
   - **Toolbar shortcuts and menu:** keyboard shortcuts, the Labels and SF settings (shared by every view, also in a small window), the shortcuts' guard while typing, and the ☰ menu from the keyboard. No screenshots.
-  - **Category donut:** hovers a slice and a legend row, then a department in the model, and checks what lights up. Clicking a slice isolates its category, and keyboard focus on a row lights it. One full-page shot shows a hovered slice and its departments glowing.
   - **Colour panel:** recolours a category from the palette, the saturation/brightness area and the hex field, then a department, and checks Escape, outside clicks and "Use category colour". One full-page shot shows the open panel. After "Reset colours" the stage must match `00-initial.png`.
 
   The page opens on the start screen. `open()` in the spec clicks **Explore the demo** first; `load()` stops at the start screen.
@@ -151,13 +150,6 @@ Axon and Stacking get their near-orthographic look from a tiny FOV (4° and 0.2�
 - "Reset colours" shows only when `colorsEdited()` and restores `INIT_CAT_COLORS` / `INIT_DEPT_COLORS` from `initState()`. "Reset layout" leaves colours alone.
 - A department darker than relative luminance 0.18 gets white label text (class `inv`). The demo's darkest colour is 0.23, so the demo keeps dark labels.
 - `hexColor()` (`util.js`) parses hex codes for both the panel and the importer.
-
-**Category donut** (`ui/catPie.js`): "Program by category" in the left panel draws a donut above the legend rows, one slice per category with program in scope (the campus or the focused building), in `CATS` order.
-- A category is hot while its slice or legend row is hovered, while its row's button has keyboard focus, or while one of its departments is hovered in the model (`hoverId`). Its slice lifts, the others fade, its row lights, and the centre shows its name, SF and share. Otherwise the centre shows the program total, or the isolated category.
-- `paintPie()` applies this to the rendered donut without rebuilding the panel. `renderLeft()` calls it, and so does `ui/pointer.js` whenever `hoverId` changes. It returns early when nothing changed.
-- A hot slice or row (not a hovered department) also sets `hotCat` (`state.js`), which makes the category's departments glow in `scene/update.js`.
-- Slices carry `data-slice`, not `data-cat`, so `[data-cat=…]` still finds exactly one legend button. A click on either isolates the category.
-- Slices are inset to leave a constant 2px gap between them. The legend rows stay the exact readout and keep the colour swatches.
 
 **Panels** (`ui/panels.js`): `renderLeft()` and `renderRight()` rebuild their `innerHTML` from strings. Pass every program or user string through `esc()`. Clicks are handled in `ui/controls.js` by delegated listeners on `#left`, `#right`, `#overlay`, `#modes` and `#tools`, keyed off `data-b`, `data-dept`, `data-cat`, `data-act` and `data-mode` attributes. New controls should follow the same pattern.
 

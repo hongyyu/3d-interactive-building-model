@@ -4,7 +4,6 @@ import {leftEl,rightEl} from '../dom.js';
 import {esc,fmt,fk} from '../util.js';
 import {B} from '../scene/scene.js';
 import {updateFloorTagText} from '../scene/overlay.js';
-import {pieHTML,paintPie} from './catPie.js';
 import {floorStat,levelOf} from '../layout/plan.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 
@@ -39,7 +38,7 @@ export function renderLeft(){
   // the whole campus in the overview, otherwise the focused building
   const scope=ov?BUILDINGS.map(b=>b.id):[state.sel], by={};
   scope.forEach(bid=>{ const p=programByCat(bid).by; for(const k in p) by[k]=(by[k]||0)+p[k]; });
-  h+='<section class="blk"><h2 class="h">Program by category</h2><p class="scope">'+(ov?'Whole campus':esc(BDEF[state.sel].name))+'</p>'+pieHTML(by)+'<div class="lgl">';
+  h+='<section class="blk"><h2 class="h">Program by category</h2><p class="scope">'+(ov?'Whole campus':esc(BDEF[state.sel].name))+'</p><div class="lgl">';
   // each row: the swatch, which opens the colour panel, then the button that isolates the category
   for(const k in CATS){
     const a=by[k]||0, c=CATS[k];
@@ -49,7 +48,6 @@ export function renderLeft(){
   }
   h+='</div><button type="button" class="link" data-act="resetcolors"'+(colorsEdited()?'':' hidden')+' title="Go back to the colours of the loaded program">Reset colours</button></section>';
   leftEl.innerHTML=h;
-  paintPie();
 }
 const GRIP='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5.5" r="1.3"/><circle cx="12.5" cy="5.5" r="1.3"/><circle cx="7.5" cy="10" r="1.3"/><circle cx="12.5" cy="10" r="1.3"/><circle cx="7.5" cy="14.5" r="1.3"/><circle cx="12.5" cy="14.5" r="1.3"/></svg>';
 const MORE='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="15" cy="10" r="1.4"/></svg>';

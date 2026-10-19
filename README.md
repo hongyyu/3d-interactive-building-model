@@ -60,8 +60,7 @@ The icon left of the title brings the start screen back.
 - **Reset colours** (left panel) restores the loaded colours.
 
 **Other**
-- **Program by category:** the donut shows each category's share of the campus, or of the focused building. Hover a slice or a legend row to see its area and share and make its departments glow in the model. Hovering a department in the model lights its category on the donut.
-- **Highlight a category:** click its slice or its name in **Program by category** to fade everything else. Click it again to clear.
+- **Highlight a category:** click its name in **Program by category** to fade everything else. Click it again to clear.
 - **Hide details:** the chevron next to the building name folds the right panel down to its title.
 - **Hide buildings:** the chevron next to **Buildings** folds the building cards away, leaving more room for **Program by category**.
 - **Reset layout** (☰ menu) restores the loaded levels, areas and placements. It leaves colours alone.
@@ -156,7 +155,6 @@ npm run test:visual               # build, then run every test in headless Chrom
 | **Printed report** | Checks the report's text and pages, then overfills a level, sends a department to the tray, and checks that a second print shows both. |
 | **Toolbar shortcuts and menu** | Keyboard shortcuts, the Labels and SF settings across views, that shortcuts are ignored while typing, and the ☰ menu from the keyboard. |
 | **Level editing** | Reorders levels by dragging and with the arrow keys, cancels a drag with Escape, inserts and removes levels, and folds the right panel and the Buildings list. |
-| **Category donut** | Hovers a slice, a legend row and a department in the model, and checks that the donut, the legend and the model light the same category. Clicking a slice isolates it. |
 | **Colour panel** | Recolours a category from the palette, the colour area and the hex field, then a department. Checks Escape, outside clicks and **Use category colour**, and that **Reset colours** restores the demo's look. |
 
 **After an intended visual change:** review the failures with `npx playwright show-report`, re-record the baselines with `npm run test:visual:update`, and commit them.

@@ -45,7 +45,3 @@ export function setHoverId(id){ hoverId=id; }
    panel; only ui/levels.js changes it */
 export let hotIds=null;
 export function setHotIds(ids){ hotIds=ids; }
-/* the category whose departments glow because its slice or legend row is hovered or focused in the
-   left panel; only ui/catPie.js changes it */
-export let hotCat=null;
-export function setHotCat(k){ hotCat=k; }
