@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Interactive massing and stacking diagram for a medical campus program (v0.1 prototype). It's a Vite app written in vanilla JS ES modules. Three.js is pinned to **r128** (`three@0.128.0` from npm).
+**Dado** is an interactive massing and stacking diagram for a medical campus program (v0.1 prototype). It's a Vite app written in vanilla JS ES modules. Three.js is pinned to **r128** (`three@0.128.0` from npm).
 
 ```sh
 npm install
@@ -37,6 +37,11 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - **Roadmap:** `FEATURE_PLAN.md` describes the planned phases: CSV/XLSX program import, layout options and compare, JPEG/CSV export, Rhino `.3dm` import and vertical circulation. Upgrading Three.js beyond r128 is a Phase 3 task. Until then, stick to the r128 API, and import any addons from `three/examples/jsm/...` of 0.128.0.
 - **Data privacy constraint:** the repo and the Pages site are public. `src/data/demo.js` must hold only the fictional demo program, so never commit real client data. Test fixtures must be fictional too. User files are parsed in the browser and never uploaded. There is no backend.
 - **Copyright notice:** the project is proprietary (see `LICENSE`); never add an open-source license. "© 2026 Hongyu Li and Zining Cheng" appears in `LICENSE`, the README's License section, the `author` and `copyright` meta tags and the start screen footer (`.wlegal`) in `index.html`, the report footer (`ui/report.js`) and a comment at the top of the entry JS chunk (`postBanner` in `vite.config.js`). Keep them in step. The banner skips the lazy SheetJS chunk, which is third-party code.
+- **Name and logo:** the app is Dado (the solid block of a pedestal; Italian for a die). The mark is three floors stacked with a gap between them, the middle one turned 14°, drawn in isometric line art.
+  - It is the `#mark` symbol at the top of `index.html`. The header's `#home` button and the start screen title use it, and each sets its own `stroke-width`.
+  - `public/favicon.svg` (heavier lines, dark-mode colours), `public/favicon-32.png` and `public/apple-touch-icon.png` are the same drawing, so redraw them together.
+  - The wordmark is Jost 400 set lowercase (`--brand` in `style.css`), on the header title and the start screen title. `index.html` loads only the letters of "Dado" (`text=Dado`). The name stays "Dado" in text: the page title, the report and the PDF name.
+  - The GitHub repo and the Pages URL keep the old name, `3d-interactive-building-model`.
 
 ## Architecture
 
@@ -73,6 +78,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 **Template** (`scripts/build-template.mjs`): ExcelJS (a dev dependency) writes the template from `DEMO`, with dropdowns, number checks and an Instructions sheet. Its sheet and column names must stay in step with `COLS` in the importer.
 
 **Start screen** (`ui/welcome.js`): `#welcome` is visible in the markup and `#app` starts `inert`, so the app never flashes before boot.
+- Its brand block (`.wbrand`) has the app header's size and position, so the mark and name stay put when it closes and only the line under the name changes.
 - The illustration is an isometric SVG generated from the demo's first building. It is animated purely in CSS: `.wf` drops each floor in, `.wx` explodes the stack, and both run on the same 10 s loop.
 - `showWelcome()` and `closeWelcome()` toggle it, and the brand mark `#home` reopens it. `main.js` skips rendering while it is open.
 - An import started from the start screen closes it when the import dialog closes with `returnValue === 'ok'`. `importDialog.js` clears `returnValue` on open, because Escape keeps the old value.

@@ -9,7 +9,7 @@ const OUT = new URL('../public/templates/program_template.xlsx', import.meta.url
 const ROWS = 1000; // rows that get dropdowns and number checks
 
 const wb = new ExcelJS.Workbook();
-wb.creator = '3D Interactive Building Model';
+wb.creator = 'Dado';
 
 function sheet(name, columns) {
   const ws = wb.addWorksheet(name, {views: [{state: 'frozen', ySplit: 1}]});
@@ -31,7 +31,7 @@ const positive = (title) => ({type: 'decimal', operator: 'greaterThan', formulae
 const info = wb.addWorksheet('Instructions');
 info.getColumn(1).width = 110;
 [
-  ['3D Interactive Building Model: program template', {bold: true, size: 14}],
+  ['Dado: program template', {bold: true, size: 14}],
   [''],
   ['How to use', {bold: true}],
   ['1. Buildings sheet: one row per building.'],

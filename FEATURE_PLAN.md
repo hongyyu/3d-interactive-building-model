@@ -1,4 +1,4 @@
-# 3D Interactive Building Model — Feature Plan
+# Dado — Feature Plan
 
 **Goal:** turn the current single-page prototype into a web tool that medical planners can use on any project: load a building model and a program, study stacking options, plan vertical circulation, and export diagrams and data for client meetings.
 

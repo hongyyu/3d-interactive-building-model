@@ -1,6 +1,10 @@
-# 3D Interactive Building Model
+<img src="public/favicon.svg" alt="Dado logo" width="72">
+
+# Dado
 
 Interactive massing and stacking diagrams for presenting a medical campus program to clients. Load a program from Excel, stack its departments level by level, and walk the room through it in 3D.
+
+*Dado* is the solid block of a pedestal, and Italian for a die.
 
 **[Open the live demo →](https://hongyyu.github.io/3d-interactive-building-model/)**
 
@@ -24,7 +28,7 @@ Interactive massing and stacking diagrams for presenting a medical campus progra
 3. Click a building to focus it, then switch views with `1`, `2` and `3`.
 4. Drag departments between levels. When you're done, choose **Print report (PDF)…** from the ☰ menu.
 
-The icon left of the title brings the start screen back.
+The Dado mark left of the title brings the start screen back.
 
 ## Views
 

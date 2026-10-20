@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<!-- Dado: three floors stacked with a gap between them, the middle one turned 14°. Same drawing as
+     #mark in index.html, with heavier lines for tab sizes. Swaps to light lines on dark tab bars. -->
+<style>.t{fill:#fff}.l{fill:#f3f5f8}.r{fill:#dfe4eb}g{stroke:#141922}
+@media (prefers-color-scheme:dark){.t{fill:#2b313c}.l{fill:#232832}.r{fill:#1b1f27}g{stroke:#e8ebf0}}</style>
+<g stroke-width="1.5" stroke-linejoin="round">
+<path class="t" d="M16 13.57 27.94 20.46 16 27.35 4.06 20.46Z"/>
+<path class="l" d="M4.06 24.11 16 31V27.35L4.06 20.46Z"/>
+<path class="r" d="M27.94 24.11 16 31V27.35L27.94 20.46Z"/>
+<path class="t" d="M13.11 7.49 27.58 12.51 18.89 20.86 4.42 15.84Z"/>
+<path class="l" d="M4.42 19.49 18.89 24.51V20.86L4.42 15.84Z"/>
+<path class="r" d="M27.58 16.16 18.89 24.51V20.86L27.58 12.51Z"/>
+<path class="t" d="M16 1 27.94 7.89 16 14.78 4.06 7.89Z"/>
+<path class="l" d="M4.06 11.54 16 18.43V14.78L4.06 7.89Z"/>
+<path class="r" d="M27.94 11.54 16 18.43V14.78L27.94 7.89Z"/>
+</g>
+</svg>

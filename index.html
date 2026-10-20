@@ -3,22 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>3D Interactive Building Model</title>
+<title>Dado</title>
 <meta name="author" content="Hongyu Li and Zining Cheng">
 <meta name="copyright" content="© 2026 Hongyu Li and Zining Cheng. All rights reserved.">
+<link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- the wordmark's typeface, only the letters of "Dado" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400&text=Dado&display=swap">
 <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
+<!-- the Dado mark: three floors stacked with a gap between them, the middle one turned 14°. Drawn bottom
+     to top, so each floor hides what is behind it. public/favicon.svg is the same drawing. Line width
+     comes from CSS. -->
+<svg class="sprite" aria-hidden="true"><symbol id="mark" viewBox="0 0 32 32">
+  <g stroke="#141922" stroke-linejoin="round">
+    <path fill="#fff" d="M16 13.73 27.14 20.16 16 26.59 4.86 20.16Z"/><path fill="#f3f5f8" d="M4.86 23.57 16 30V26.59L4.86 20.16Z"/><path fill="#dfe4eb" d="M27.14 23.57 16 30V26.59L27.14 20.16Z"/>
+    <path fill="#fff" d="M13.3 8.06 26.81 12.74 18.7 20.54 5.19 15.85Z"/><path fill="#f3f5f8" d="M5.19 19.26 18.7 23.94V20.54L5.19 15.85Z"/><path fill="#dfe4eb" d="M26.81 16.15 18.7 23.94V20.54L26.81 12.74Z"/>
+    <path fill="#fff" d="M16 2 27.14 8.43 16 14.86 4.86 8.43Z"/><path fill="#f3f5f8" d="M4.86 11.84 16 18.27V14.86L4.86 8.43Z"/><path fill="#dfe4eb" d="M27.14 11.84 16 18.27V14.86L27.14 8.43Z"/>
+  </g>
+</symbol></svg>
 <div class="app" id="app" inert>
   <header class="top">
     <div class="brandwrap">
       <button type="button" class="home" id="home" title="Start screen" aria-label="Start screen">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="13" width="14" height="4" rx="1"/><rect x="3" y="8" width="14" height="4" rx="1"/><rect x="3" y="3" width="9" height="4" rx="1"/></svg>
+        <svg class="mark" aria-hidden="true"><use href="#mark"/></svg>
       </button>
-      <div class="brand"><h1 id="ptitle">3D Interactive Building Model</h1><p id="psub"></p></div>
+      <div class="brand"><h1 id="ptitle">Dado</h1><p id="psub"></p></div>
     </div>
     <div class="island" role="group" aria-label="View mode" id="modes">
       <button type="button" class="tool wide" data-mode="mass" aria-label="3D Massing" aria-pressed="true" aria-keyshortcuts="1" data-tip="3D Massing — 1">
@@ -109,21 +124,23 @@
   <button type="button" class="cpreset" id="cpReset" hidden><i></i>Use category colour</button>
 </dialog>
 <section class="welcome" id="welcome" aria-labelledby="wTitle">
+  <div class="brandwrap wbrand">
+    <span class="wmark"><svg class="mark" aria-hidden="true"><use href="#mark"/></svg></span>
+    <div class="brand"><h1 id="wTitle">Dado</h1><p>Medical campus · massing &amp; stacking study</p></div>
+  </div>
   <div class="wgrid">
     <div class="wcopy">
-      <p class="eyebrow rise" style="--d:0">Medical campus · massing &amp; stacking study</p>
-      <h1 class="wtitle rise" id="wTitle" style="--d:1">3D Interactive Building Model</h1>
-      <p class="wlede rise" style="--d:2">Turn a department program into a 3D stacking diagram. Move departments between floors, keep floor plates within capacity, and present the result to your client.</p>
-      <ol class="wsteps">
-        <li class="rise" style="--d:3"><b>01</b><div><h2>Load a program</h2><p>Departments and areas from an Excel workbook or CSV, or the fictional demo campus.</p></div></li>
-        <li class="rise" style="--d:4"><b>02</b><div><h2>Stack it</h2><p>Drag departments between levels and add levels as the design grows. A floor that is over capacity turns red.</p></div></li>
-        <li class="rise" style="--d:5"><b>03</b><div><h2>Present it</h2><p>Switch between 3D Massing, Axon and Stacking, and guide the room with the red laser pointer.</p></div></li>
+      <p class="whero rise" style="--d:1">Turn a department program into a 3D stacking diagram.</p>
+      <ol class="wsteps rise" style="--d:2">
+        <li><b>01</b><h2>Load a program</h2><p>From Excel, CSV or the demo campus</p></li>
+        <li><b>02</b><h2>Stack it</h2><p>Drag departments between floors</p></li>
+        <li><b>03</b><h2>Present it</h2><p>In 3D Massing, Axon or Stacking</p></li>
       </ol>
-      <div class="wcta rise" style="--d:6">
+      <div class="wcta rise" style="--d:3">
         <button type="button" class="wbtn primary" data-act="demo"><span>Explore the demo</span><small id="wDemoMeta"></small></button>
         <button type="button" class="wbtn" data-act="import"><span>Import Excel program</span><small>.xlsx or .csv file</small></button>
       </div>
-      <p class="note wfine rise" style="--d:7">Files are read in your browser and never uploaded. Need the format? <a href="templates/program_template.xlsx" download>Download the Excel template</a>.</p>
+      <p class="wfine rise" style="--d:4">Files are read in your browser and never uploaded. <a href="templates/program_template.xlsx" download>Download the Excel template</a></p>
       <button type="button" class="link" data-act="back" id="welcomeBack" hidden>Back to the model</button>
     </div>
     <figure class="wart" aria-hidden="true">
@@ -131,7 +148,7 @@
       <figcaption class="wcap"><span class="c1">Departments stack level by level</span><span class="c2">Axon view pulls the floors apart</span><span class="c3">Back together as one massing</span></figcaption>
     </figure>
   </div>
-  <footer class="note wlegal rise" style="--d:8">© 2026 Hongyu Li and Zining Cheng. All rights reserved.</footer>
+  <footer class="note wlegal rise" style="--d:5">© 2026 Hongyu Li and Zining Cheng. All rights reserved.</footer>
 </section>
 <canvas class="laser" id="laser" hidden aria-hidden="true"></canvas>
 <article class="report" id="report"></article>

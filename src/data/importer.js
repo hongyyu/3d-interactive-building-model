@@ -169,7 +169,7 @@ export async function readProgramFile(file){
   if(!nDepts){ errors.push('No valid departments on the Program sheet.'); return fail(); }
   if(unassigned.length) warnings.unshift(`${unassigned.length} department${unassigned.length>1?'s have':' has'} no building or level and will wait in the Unassigned tray.`);
 
-  const project={title:'3D Interactive Building Model',sub:file.name+' · imported',cats,depts,buildings,unassigned};
+  const project={title:'Dado',sub:file.name+' · imported',cats,depts,buildings,unassigned};
   const summary={file:file.name,departments:nDepts,totalSF,buildings:buildings.length,
     placed:nDepts-unassigned.length,unassigned:unassigned.length,keptBuildings:!bName,keptCategories:!catName};
   return {project,summary,errors,warnings};
