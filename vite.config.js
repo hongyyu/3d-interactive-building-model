@@ -12,7 +12,7 @@ export default defineConfig({
       // survives. The lazy SheetJS chunk is third-party code and keeps only its own notice.
       output: {
         postBanner: chunk => chunk.isEntry
-          ? '/*! 3D Interactive Building Model. Copyright (c) 2026 Hongyu Li and Zining Cheng. All rights reserved.\n' +
+          ? '/*! Dado. Copyright (c) 2026 Hongyu Li and Zining Cheng. All rights reserved.\n' +
             ' * Third-party code bundled in this file keeps its own license. */'
           : '',
       },
