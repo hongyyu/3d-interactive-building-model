@@ -14,7 +14,8 @@ import wasmUrl from 'rhino3dm/rhino3dm.wasm?url';
 import {PROJECT,CATS,DEPTS} from './project.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 
-const DEFAULT_FH=15, FLAT=1, TOL=1.5, MIN_AREA=400, MIN_H=8, FAR=2000, MAX_DEPTH=8;
+export const DEFAULT_FH=15;
+const FLAT=1, TOL=1.5, MIN_AREA=400, MIN_H=8, FAR=2000, MAX_DEPTH=8;
 const FEET={Millimeters:1/304.8,Centimeters:1/30.48,Decimeters:1/3.048,Meters:1/0.3048,Kilometers:1000/0.3048,Inches:1/12,Feet:1,Yards:3,Miles:5280};
 const UNIT_NAME={Millimeters:'millimetres',Centimeters:'centimetres',Decimeters:'decimetres',Meters:'metres',Kilometers:'kilometres',Inches:'inches',Feet:'feet',Yards:'yards',Miles:'miles'};
 // layers that hold the surroundings rather than the project; their masses start unticked
@@ -78,8 +79,9 @@ function userText(obj,into){
 
 /* ---------- reading the file ---------- */
 /* returns {masses, units, notes, errors}; masses is null when nothing can be imported. Each mass:
-   {name, layer, w, d, h, x, z, levels, fh, src, on, notes} in feet, src saying where the level
-   count came from ('text', 'floors', 'plates' or 'height') */
+   {name, unnamed, layer, w, d, h, x, z, levels, fh, src, on, notes} in feet. unnamed: the name is
+   made up, as the file has none. src: where the level count came from ('text', 'floors', 'plates',
+   or 'height' for an estimate at DEFAULT_FH) */
 export async function readMassingFile(file){
   const rh=await loadRhino();
   const doc=rh.File3dm.fromByteArray(new Uint8Array(await file.arrayBuffer()));
@@ -187,7 +189,7 @@ function readDoc(rh,doc,errors,notes){
   masses.sort((a,b)=>a.x-b.x||a.z-b.z);
   let n=0; const used={};
   masses.forEach(m=>{
-    if(!m.name) m.name='Building '+(++n);
+    if(!m.name){ m.name='Building '+(++n); m.unnamed=true; }
     let name=m.name, i=1;
     while(used[name.toLowerCase()]) name=m.name+' '+(++i);
     used[name.toLowerCase()]=true; m.name=name;
@@ -250,24 +252,28 @@ function massOf(parts,u){
 /* The current program on the chosen masses ({name, w, d, x, z, levels, fh, from}): a mass that takes
    its departments from a current building (from = its id) gets them level by level, and the rest,
    with every department of the buildings no mass takes from, wait in the Unassigned tray. levels and
-   unassigned are the live stacking (state.levels, state.unassigned). */
+   unassigned are the live stacking (state.levels, state.unassigned).
+   Without a program of the user's (PROJECT.program is empty: the demo's is loaded) the buildings
+   come in empty, with no departments or categories, until a program is imported. */
 export function massingProject(masses,levels,unassigned,fileName){
-  const tray=unassigned.slice(), used={};
+  const keep=!!PROJECT.program, tray=keep?unassigned.slice():[], used={};
   let over=0;
   const buildings=masses.map((m,i)=>{
     const lv=Array.from({length:m.levels},()=>[]);
-    const src=m.from&&!used[m.from]&&levels[m.from];
+    const src=keep&&m.from&&!used[m.from]&&levels[m.from];
     if(src){
       used[m.from]=true;
       src.forEach((ids,f)=>{ if(f<m.levels) lv[f].push(...ids); else { tray.push(...ids); over+=ids.length; } });
     }
     return {id:'b'+(i+1),name:m.name,w:m.w,d:m.d,fh:m.fh,x:m.x,z:m.z,levels:lv};
   });
-  for(const bid in levels) if(!used[bid]) levels[bid].forEach(ids=>tray.push(...ids));
   const cats={}, depts={};
-  for(const k in CATS) cats[k]={...CATS[k]};
-  for(const k in DEPTS) depts[k]={...DEPTS[k]};
-  const base=String(PROJECT.sub||'').replace(/ · [^·]*\.3dm$/i,'');
-  const project={title:PROJECT.title,sub:(base?base+' · ':'')+fileName,massing:fileName,cats,depts,buildings,unassigned:tray};
+  if(keep){
+    for(const bid in levels) if(!used[bid]) levels[bid].forEach(ids=>tray.push(...ids));
+    for(const k in CATS) cats[k]={...CATS[k]};
+    for(const k in DEPTS) depts[k]={...DEPTS[k]};
+  }
+  const base=keep?String(PROJECT.sub||'').replace(/ · [^·]*\.3dm$/i,''):'';
+  const project={title:PROJECT.title,sub:(base?base+' · ':'')+fileName,program:PROJECT.program,massing:fileName,cats,depts,buildings,unassigned:tray};
   return {project,placed:Object.keys(depts).length-tray.length,unassigned:tray.length,over};
 }

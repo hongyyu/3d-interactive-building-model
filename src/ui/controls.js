@@ -22,6 +22,7 @@ export function bindControls(){
     const cat=e.target.closest('[data-cat]'); if(cat){ state.isolate=(state.isolate===cat.dataset.cat)?null:cat.dataset.cat; renderLeft(); return; }
     if(e.target.closest('[data-act="campus"]')) showCampus();
     else if(e.target.closest('[data-act="demo"]')) loadDemo();
+    else if(e.target.closest('[data-act="import"]')) chooseImportFile();
     else if(e.target.closest('[data-act="resetcolors"]')) resetColors();
     else if(e.target.closest('[data-act="bfold"]')){ state.buildingsOpen=!state.buildingsOpen; renderLeft(); leftEl.querySelector('[data-act=bfold]').focus(); }
   });

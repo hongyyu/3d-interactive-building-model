@@ -4,7 +4,7 @@
    - Diagnostic & Treatment: three stacked floor boxes;
    - Outpatient Pavilion: a closed mesh on its own layer, User Text floor_to_floor on the layer;
    - Central Utility Plant: a plain box, so its level count comes from its height.
-   Plus a neighbour on a Context layer, a site outline, and a hidden box. The model is in metres
+   Plus a neighbour on a Context layer, a box with no name, a site outline, and a hidden box. The model is in metres
    and turned 20°, so the importer has to convert and turn it back. */
 import {createRequire} from 'node:module';
 import {DEMO} from '../src/data/demo.js';
@@ -55,5 +55,7 @@ export async function demoMassing() {
   objs.add(box({x: -400, z: 0, w: 120, d: 120}, 0, 60), attrs(context, 'Neighbour'));
   objs.add(place(rh.Curve.createControlPointCurve([[-600, -400, 0], [600, -400, 0], [600, 400, 0], [-600, 400, 0], [-600, -400, 0]], 1)), attrs(context));
   objs.add(box({x: 600, z: 0, w: 80, d: 80}, 0, 40), attrs(massing, 'Hidden box', null, true));
+  // no object name, on a layer whose name says nothing about it: the importer names it Building 1
+  objs.add(box({x: 600, z: 300, w: 100, d: 100}, 0, 40), attrs(massing));
   return Buffer.from(doc.toByteArray());
 }

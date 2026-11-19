@@ -24,7 +24,7 @@ Interactive massing and stacking diagrams for presenting a medical campus progra
 ## Quick start
 
 1. Open the [live demo](https://hongyyu.github.io/3d-interactive-building-model/), or [run it locally](#run-locally).
-2. On the start screen, choose **Explore the demo** to try a fictional campus, or **Import Excel program** to load your own.
+2. The start screen lists what to load: **Buildings** from a Rhino massing (`.3dm`) and the **Program** from Excel or CSV. Import either or both, each row shows what's loaded, then choose **Open the model**. With nothing loaded, **Explore the demo** opens a fictional campus.
 3. Click a building to focus it, then switch views with `1`, `2` and `3`.
 4. Drag departments between levels. When you're done, choose **Print report (PDF)…** from the ☰ menu.
 
@@ -112,19 +112,21 @@ Shortcuts are ignored while you type in a field or while a dialog is open. Each 
    | **Categories** | Category, Color |
 
 2. **Fill it in:** replace the example rows with your own. Building and Category cells have dropdowns. Leave Level blank for any department you want to place later.
-3. **Import it:** choose **Import program…** from the ☰ menu (or **Import Excel program** on the start screen) and pick the file. You can use an `.xlsx` workbook, or a `.csv` with just the Program columns; a CSV keeps the current buildings and categories.
+3. **Import it:** choose **Import program…** from the ☰ menu (or **Import…** in the start screen's Program row) and pick the file. You can use an `.xlsx` workbook, or a `.csv` with just the Program columns; a CSV keeps the current buildings and categories.
 4. **Check and load:** a summary lists what was read and any rows with problems. **Replace project** loads it.
 
 Departments without a building or level wait in the **Unassigned** tray. **Reset layout** returns to the imported layout, and **Load demo project** (left panel) brings back the demo.
 
 ## Use your Rhino massing
 
-The buildings don't have to come from Excel. Choose **Import Rhino massing…** from the ☰ menu (or **Import a .3dm massing** on the start screen) and pick a `.3dm` file. **Download Rhino example** in the same menu gives the demo campus as a Rhino model to try it with.
+The buildings don't have to come from Excel. Choose **Import Rhino massing…** from the ☰ menu (or **Import…** in the start screen's Buildings row) and pick a `.3dm` file. **Download Rhino example** in the same menu gives the demo campus as a Rhino model to try it with.
 
 - **What it reads:** every visible closed polysurface, extrusion, mesh or block. Parts that overlap in plan make one building, so a single mass, a stack of floor boxes, or a mass with floor plates all work. Hidden layers, flat site outlines and small objects are left out. Units are converted to feet, and a model turned on its site is turned to line up with the grid.
 - **Each building** becomes a rectangular floor plate (its footprint's bounding rectangle). Its levels come from User Text `levels` or `floor_to_floor` on the object or its layer, else from its floor boxes or plates, else from its height at 15 ft per floor.
 - **The dialog** lists each mass: untick the ones to leave out (masses on layers such as *Context* or *Site* start unticked), rename it, change its level count (its height stays), and pick the building whose departments it takes over. A mass named in Rhino (object or layer name) like a building in your program is matched for you.
-- **Your program stays:** departments keep their levels on the matched masses; the rest wait in the Unassigned tray. Importing an Excel program afterwards keeps the Rhino buildings, unless you tick **Use its Buildings sheet**.
+- **Your program stays:** if you have imported one, its departments keep their levels on the matched masses and the rest wait in the Unassigned tray. Importing an Excel program afterwards keeps the Rhino buildings, unless you tick **Use its Buildings sheet**.
+- **Guesses are marked:** a level count estimated from height and a name the file doesn't have are highlighted, with a line above the list counting them, until you change them. Each mass also says where its levels came from (User Text, floor boxes or floor outlines).
+- **No program yet?** The demo's departments are not carried over: the buildings come in empty. **Replace, then import program…** applies the massing and opens the file picker for your program right away, and the program's Building column places its departments on the masses of the same name.
 
 Buildings are boxes for now: an L-shaped or turned mass gets its bounding rectangle (the dialog says so), and every level uses the whole footprint. True floor plate shapes are planned (see `FEATURE_PLAN.md`).
 
@@ -171,7 +173,7 @@ npm run test:visual               # build, then run every test in headless Chrom
 | **Rhino massing import** | Imports a fictional Rhino model of the demo campus (in metres, turned 20°, each building modelled differently) and checks the dialog's rows and notes; the model must render exactly like the demo. |
 | **Rhino example round trip** | Downloads the Rhino example and imports it back, then imports the Excel template and checks that the Rhino buildings are kept. |
 | **Rejected file** | A file with the wrong columns can't be loaded. |
-| **Start screen, levels and laser** | Imports from the start screen and returns to it, adds and removes levels, resets the layout, and checks that the laser draws only while dragging. |
+| **Start screen, levels and laser** | Imports from the start screen's checklist (which stays open and ticks the row), opens the model and returns to it, adds and removes levels, resets the layout, and checks that the laser draws only while dragging. |
 | **Printed report** | Checks the report's text and pages, then overfills a level, sends a department to the tray, and checks that a second print shows both. |
 | **Toolbar shortcuts and menu** | Keyboard shortcuts, the Labels and SF settings across views, that shortcuts are ignored while typing, and the ☰ menu from the keyboard. |
 | **Level editing** | Reorders levels by dragging and with the arrow keys, cancels a drag with Escape, inserts and removes levels, and folds the right panel and the Buildings list. |

@@ -171,8 +171,11 @@ export async function readProgramFile(file,keepBuildings){
   if(unassigned.length) warnings.unshift(`${unassigned.length} department${unassigned.length>1?'s have':' has'} no building or level and will wait in the Unassigned tray.`);
 
   const project={title:'Dado',sub:file.name+' · imported',cats,depts,buildings,unassigned};
-  // kept buildings from Rhino stay marked as such
-  if(!bName&&PROJECT.massing){ project.massing=PROJECT.massing; project.sub+=' · '+PROJECT.massing; }
+  // where the buildings came from: this file's Buildings sheet, or the kept ones' source
+  project.program=file.name;
+  if(bName) project.sheet=file.name;
+  else if(PROJECT.massing){ project.massing=PROJECT.massing; project.sub+=' · '+PROJECT.massing; }
+  else if(PROJECT.sheet) project.sheet=PROJECT.sheet;
   const summary={file:file.name,departments:nDepts,totalSF,buildings:buildings.length,
     placed:nDepts-unassigned.length,unassigned:unassigned.length,keptBuildings:!bName,buildingsSheet:!!sheetName,keptCategories:!catName};
   return {project,summary,errors,warnings};

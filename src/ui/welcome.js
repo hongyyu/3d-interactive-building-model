@@ -1,29 +1,53 @@
 import {DEMO} from '../data/demo.js';
-import {PROJECT} from '../data/project.js';
-import {$,RM} from '../util.js';
+import {PROJECT,BUILDINGS,DEPTS} from '../data/project.js';
+import {$,RM,esc} from '../util.js';
 import {openProject} from './actions.js';
 import {chooseImportFile,chooseMassingFile} from './importDialog.js';
 
-/* Start screen shown on load: what the tool does, an animated stacking illustration and the two
-   ways in, the demo campus or an imported Excel program. #app is inert while it is open, and
+/* Start screen shown on load: what the tool does, an animated stacking illustration and a setup
+   checklist: Buildings from a Rhino massing, the Program from Excel or CSV, each with what is
+   loaded now. Imports started here keep it open and update the checklist; the main button explores
+   the demo until something is loaded, then opens the model. #app is inert while it is open, and
    main.js skips rendering the 3D scene behind it. */
-const el=$('#welcome'), app=$('#app'), back=$('#welcomeBack');
+const el=$('#welcome'), app=$('#app');
 let open=!el.hidden;
-let visited=false;   // the user has been in the app, so "Back to the model" is offered
 
 export function welcomeOpen(){ return open; }
 
 export function showWelcome(){
   open=true; app.inert=true;
-  back.hidden=!visited;
+  renderSetup();
   el.hidden=false; el.classList.remove('leaving','play');
   void el.offsetWidth; el.classList.add('play');   // replay the entrance animation
-  $('[data-act=demo]',el).focus();
+  $('#wGo').focus();
+}
+/* the checklist's status lines and main button, from where the current project's parts came from */
+const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+function renderSetup(){
+  const nb=BUILDINGS.length, nd=Object.keys(DEPTS).length;
+  const bldg=PROJECT.massing?'<b>✓ '+esc(PROJECT.massing)+'</b> · '+plural(nb,'building'):
+    PROJECT.sheet?'<b>✓ Buildings sheet of '+esc(PROJECT.sheet)+'</b> · '+plural(nb,'building'):'';
+  const prog=PROJECT.program?'<b>✓ '+esc(PROJECT.program)+'</b> · '+plural(nd,'department'):'';
+  $('#wBldg').innerHTML=bldg||'Not loaded yet · <a href="templates/campus_massing.3dm" download>example model</a>';
+  $('#wProg').innerHTML=prog||'Not loaded yet · <a href="templates/program_template.xlsx" download>template</a>';
+  $('#wBldgBtn span').textContent=bldg?'Replace…':'Import…';
+  $('#wProgBtn span').textContent=prog?'Replace…':'Import…';
+  const go=$('#wGo'), note=$('#wGoNote');
+  if(!bldg&&!prog){
+    go.dataset.act='demo'; go.firstChild.textContent='Explore the demo';
+    $('#wDemoMeta').textContent=plural(DEMO.buildings.length,'building')+' · '+plural(Object.keys(DEMO.depts).length,'department');
+    note.textContent='or import your buildings and program above';
+    return;
+  }
+  go.dataset.act='open'; go.firstChild.textContent='Open the model'; $('#wDemoMeta').textContent='';
+  const missing=!prog?'The buildings stay empty until you import a program. ':
+    !bldg?'The program sits on the demo buildings until you import yours. ':'';
+  note.innerHTML=esc(missing)+'<button type="button" class="inlink" data-act="demo">Explore the demo instead</button>';
 }
 /* immediate=true skips the fade, for example when WebGL is missing and there is nothing to show */
 export function closeWelcome(immediate){
   if(!open) return;
-  open=false; visited=true; app.inert=false;
+  open=false; app.inert=false;
   if(RM||immediate){ el.hidden=true; return; }
   el.classList.add('leaving');
   setTimeout(()=>{ if(!open) el.hidden=true; },360);
@@ -73,7 +97,6 @@ function stackSVG(){
 
 export function bindWelcome(){
   $('#wstack').innerHTML=stackSVG();
-  $('#wDemoMeta').textContent=DEMO.buildings.length+' buildings · '+Object.keys(DEMO.depts).length+' departments';
   el.addEventListener('click',e=>{
     const b=e.target.closest('[data-act]'); if(!b) return;
     const a=b.dataset.act;
@@ -86,11 +109,13 @@ export function bindWelcome(){
     }
     else if(a==='import') chooseImportFile();
     else if(a==='massing') chooseMassingFile();
-    else if(a==='back') closeWelcome();
+    else if(a==='open') closeWelcome();
   });
-  // an import started here closes the start screen once the user confirms "Replace project"
+  // an import confirmed while the start screen is open updates the checklist (the import dialog's
+  // own close listener has already loaded the project)
   const dlg=$('#importDlg');
-  dlg.addEventListener('close',()=>{ if(open&&!dlg.open&&dlg.returnValue==='ok') closeWelcome(); });
+  dlg.addEventListener('close',()=>{ if(open&&!dlg.open&&dlg.returnValue==='ok'){ renderSetup(); $('#wGo').focus(); } });
   $('#home').addEventListener('click',showWelcome);
-  if(open){ el.classList.add('play'); $('[data-act=demo]',el).focus(); }
+  renderSetup();
+  if(open){ el.classList.add('play'); $('#wGo').focus(); }
 }
