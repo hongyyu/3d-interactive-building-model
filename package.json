@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
-    "template": "node scripts/build-template.mjs",
+    "template": "node scripts/build-template.mjs && node scripts/build-massing.mjs",
     "predev": "npm run template",
     "prebuild": "npm run template"
   },
@@ -18,6 +18,7 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "dependencies": {
+    "rhino3dm": "8.35.0",
     "three": "0.128.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },

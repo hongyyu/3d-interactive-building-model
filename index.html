@@ -72,8 +72,14 @@
           <button type="button" role="menuitem" data-act="import" title="Load a program from Excel (.xlsx) or CSV">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 12.6V3.4M6.6 6.8 10 3.4l3.4 3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Import program…
           </button>
+          <button type="button" role="menuitem" data-act="massing" title="Replace the buildings with the masses in a Rhino model (.3dm). The program stays.">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6 16.6 6.3v7.4L10 17.4l-6.6-3.7V6.3zM3.4 6.3 10 10l6.6-3.7M10 10v7.4"/></svg>Import Rhino massing…
+          </button>
           <a role="menuitem" href="templates/program_template.xlsx" download title="Excel template with the demo campus as example rows">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4v9.2M6.6 9.2 10 12.6l3.4-3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Download template
+          </a>
+          <a role="menuitem" href="templates/campus_massing.3dm" download title="Rhino model (.3dm) of the demo campus: one named box per building">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4v9.2M6.6 9.2 10 12.6l3.4-3.4M3.4 12.4v2.6a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6v-2.6"/></svg>Download Rhino example
           </a>
           <button type="button" role="menuitem" data-act="print" title="Every building, level and department on printable pages. Choose Save as PDF in the print dialog.">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 7.4v-4h8v4M6 14H4.8a1.4 1.4 0 0 1-1.4-1.4V8.8a1.4 1.4 0 0 1 1.4-1.4h10.4a1.4 1.4 0 0 1 1.4 1.4v3.8a1.4 1.4 0 0 1-1.4 1.4H14M6 11.6h8v5H6z"/></svg>Print report (PDF)…<kbd id="printKey">Ctrl+P</kbd>
@@ -121,7 +127,8 @@
     </button>
   </div>
 </div>
-<input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+<input type="file" id="importFile" hidden>
+<input type="file" id="massFile" hidden>
 <dialog class="cpanel" id="colorPanel" aria-labelledby="cpTitle" tabindex="-1">
   <div class="cphead">
     <div><p class="eyebrow" id="cpKind"></p><h2 class="cptitle" id="cpTitle"></h2></div>
@@ -144,17 +151,24 @@
   <div class="wgrid">
     <div class="wcopy">
       <p class="whero rise" style="--d:1">Turn a department program into a 3D stacking diagram.</p>
-      <ol class="wsteps rise" style="--d:2">
-        <li><b>01</b><h2>Load a program</h2><p>From Excel, CSV or the demo campus</p></li>
-        <li><b>02</b><h2>Stack it</h2><p>Drag departments between floors</p></li>
-        <li><b>03</b><h2>Present it</h2><p>In 3D Massing, Axon or Stacking</p></li>
-      </ol>
-      <div class="wcta rise" style="--d:3">
-        <button type="button" class="wbtn primary" data-act="demo"><span>Explore the demo</span><small id="wDemoMeta"></small></button>
-        <button type="button" class="wbtn" data-act="import"><span>Import Excel program</span><small>.xlsx or .csv file</small></button>
+      <!-- what to load, and what is loaded: welcome.js fills the status lines and the main button -->
+      <div class="wsetup rise" style="--d:2" role="group" aria-label="Your files">
+        <div class="wrow">
+          <svg class="wico" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6 16.6 6.3v7.4L10 17.4l-6.6-3.7V6.3zM3.4 6.3 10 10l6.6-3.7M10 10v7.4"/></svg>
+          <div><h2>Buildings<em>Rhino massing · .3dm</em></h2><p id="wBldg"></p></div>
+          <button type="button" class="wbtn sm" data-act="massing" id="wBldgBtn"><span>Import…</span></button>
+        </div>
+        <div class="wrow">
+          <svg class="wico" viewBox="0 0 20 20" aria-hidden="true"><rect x="3.4" y="3.6" width="13.2" height="12.8" rx="1.4"/><path d="M3.4 7.6h13.2M3.4 11.6h13.2M8 7.6v8.8"/></svg>
+          <div><h2>Program<em>Excel or CSV · departments and areas</em></h2><p id="wProg"></p></div>
+          <button type="button" class="wbtn sm" data-act="import" id="wProgBtn"><span>Import…</span></button>
+        </div>
+        <div class="wfoot">
+          <button type="button" class="wbtn primary" data-act="demo" id="wGo"><span>Explore the demo</span><small id="wDemoMeta"></small></button>
+          <p id="wGoNote"></p>
+        </div>
       </div>
-      <p class="wfine rise" style="--d:4">Files are read in your browser and never uploaded. <a href="templates/program_template.xlsx" download>Download the Excel template</a></p>
-      <button type="button" class="link" data-act="back" id="welcomeBack" hidden>Back to the model</button>
+      <p class="wfine rise" style="--d:3">Files are read in your browser and never uploaded.</p>
     </div>
     <figure class="wart" aria-hidden="true">
       <div class="wstack" id="wstack"></div>
@@ -170,6 +184,7 @@
     <div class="dlg-body" id="importBody"></div>
     <div class="dlg-actions">
       <button type="submit" class="btn" value="cancel">Cancel</button>
+      <button type="button" class="btn" id="importOkProg" hidden>Replace, then import program…</button>
       <button type="submit" class="btn primary" value="ok" id="importOk">Replace project</button>
     </div>
   </form>

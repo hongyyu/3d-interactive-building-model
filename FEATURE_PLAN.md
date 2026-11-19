@@ -79,14 +79,14 @@ Layer structure:
 **Required change: department layout on irregular plates.** v0.1 slices a rectangle into strips. For arbitrary polygons, departments will be laid out by **area-proportional strip slicing of the polygon** along its long axis, using polygon clipping (for example the `polygon-clipping` or `clipper2` library). Each department becomes a polygon extruded to the level height. A later improvement is letting the user drag the cut lines between departments.
 
 **Tasks**
-- [ ] Write a 1-page Rhino modeling guide plus a template `.3dm`
-- [ ] Parse layers and curves with rhino3dm.js; convert to building/level data
-- [ ] Validation report on import: open curves, missing levels, duplicate elevations, unit warnings
+- [x] Rectangular import (Oct 2026): masses (polysurfaces, extrusions, meshes, blocks, floor boxes or floor plates) read with rhino3dm.js in `src/data/massing.js`; each building becomes its bounding rectangle, with levels from User Text, floors or height; units converted, a turned model aligned to the grid; a dialog to pick, rename and re-level masses and map them to the program's buildings; a `campus_massing.3dm` example download
+- [ ] Write a 1-page Rhino modeling guide
+- [x] Validation notes on import: hidden, flat, small and unsupported objects, units, non-rectangular plates
 - [ ] Polygon-based department slicing and extrusion
 - [ ] Optional context meshes, drawn as light grey
 - [ ] Upgrade Three.js from r128 to a current version (module build)
 
-**Fallback:** keep a simple "define buildings by table" option (width × depth × levels × floor height) for early concept work without a Rhino model.
+**Fallback:** keep a simple "define buildings by table" option (width × depth × levels × floor height) for early concept work without a Rhino model. (Done: the Buildings sheet of the Excel template, which a program import ignores once the buildings come from Rhino unless the user ticks it.)
 
 ---
 

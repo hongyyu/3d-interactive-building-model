@@ -6,7 +6,7 @@ import {retarget,setViewRate} from '../scene/view.js';
 import {renderLeft,renderRight} from './panels.js';
 import {selectBuilding,selectDept,setMode,setArea,moveDept,resetLayout,addLevel,showCampus,resetColors,toggleSF,deleteDept,renameDept,setDeptCat} from './actions.js';
 import {bindColorPanel,editCatColor,editDeptColor} from './colorPanel.js';
-import {bindImport,chooseImportFile,loadDemo} from './importDialog.js';
+import {bindImport,chooseImportFile,chooseMassingFile,loadDemo} from './importDialog.js';
 import {toggleLaser} from './laser.js';
 import {printReport} from './report.js';
 import {menuKeys} from './menu.js';
@@ -25,6 +25,7 @@ export function bindControls(){
     if(e.target.closest('[data-act="campus"]')) showCampus();
     else if(e.target.closest('[data-act="addbuilding"]')) openAddBuilding();
     else if(e.target.closest('[data-act="demo"]')) loadDemo();
+    else if(e.target.closest('[data-act="import"]')) chooseImportFile();
     else if(e.target.closest('[data-act="resetcolors"]')) resetColors();
     else if(e.target.closest('[data-act="bfold"]')){ state.buildingsOpen=!state.buildingsOpen; renderLeft(); leftEl.querySelector('[data-act=bfold]').focus(); }
   });
@@ -76,6 +77,7 @@ export function bindControls(){
     else if(a==='resetview') resetView();
     else if(a==='resetlayout') resetLayout();
     else if(a==='import') chooseImportFile();
+    else if(a==='massing') chooseMassingFile();
     else if(a==='print') printReport();
     else if(a==='laser') toggleLaser();
     else if(a==='present') togglePresent();

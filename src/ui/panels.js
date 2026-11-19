@@ -48,6 +48,8 @@ export function renderLeft(){
        '<button type="button" class="sw" data-catcolor="'+k+'" aria-haspopup="dialog" aria-expanded="'+(state.picking==='cat:'+k)+'" title="Change colour" aria-label="'+esc(c.name)+' colour"><i style="background:'+c.color+'"></i></button>'+
        '<button type="button" data-cat="'+k+'"><span>'+esc(c.name)+'</span><em>'+(a?fk(a):'–')+'</em></button></div>';
   }
+  // buildings from Rhino come in without a program until one is imported
+  if(!Object.keys(DEPTS).length) h+='<p class="note">No program loaded yet. <button type="button" class="link" data-act="import">Import program…</button></p>';
   h+='</div><button type="button" class="link" data-act="resetcolors"'+(colorsEdited()?'':' hidden')+' title="Go back to the colours of the loaded program">Reset colours</button></section>';
   leftEl.innerHTML=h;
 }
