@@ -17,7 +17,6 @@ import {MAX_LEVELS} from '../scene/constants.js';
 export const DEFAULT_FH=15;
 const FLAT=1, TOL=1.5, MIN_AREA=400, MIN_H=8, FAR=2000, MAX_DEPTH=8;
 const FEET={Millimeters:1/304.8,Centimeters:1/30.48,Decimeters:1/3.048,Meters:1/0.3048,Kilometers:1000/0.3048,Inches:1/12,Feet:1,Yards:3,Miles:5280};
-const UNIT_NAME={Millimeters:'millimetres',Centimeters:'centimetres',Decimeters:'decimetres',Meters:'metres',Kilometers:'kilometres',Inches:'inches',Feet:'feet',Yards:'yards',Miles:'miles'};
 // layers that hold the surroundings rather than the project; their masses start unticked
 const CONTEXT=/context|existing|neighbo|surround|site|landscape|topo|terrain|road|street|tree|parking|ground/i;
 // layer names that say nothing about the building; masses on them are numbered instead
@@ -78,28 +77,57 @@ function userText(obj,into){
 }
 
 /* ---------- reading the file ---------- */
-/* returns {masses, units, notes, errors}; masses is null when nothing can be imported. Each mass:
+/* Reads the file once into unit-free numbers (collect), then sizes the buildings in a unit (massesAt),
+   so the dialog can change the unit without reading the file again.
+   Returns {model, masses, unit, guessed, notes, errors}; model is null when the file can't be read,
+   and masses is null when nothing in it can be imported in that unit. Each mass:
    {name, unnamed, layer, w, d, h, x, z, levels, fh, src, on, notes} in feet. unnamed: the name is
    made up, as the file has none. src: where the level count came from ('text', 'floors', 'plates',
-   or 'height' for an estimate at DEFAULT_FH) */
+   or 'height' for an estimate at DEFAULT_FH).
+   The file's own unit is used unless at that scale nothing would be building-sized: a model drawn in
+   metres in a millimetre template is common, and would come out a few inches long. Then the first
+   unit of the same family (metric or imperial) that gives buildings 20 to 10,000 ft across is used,
+   with guessed set and a note. */
+export const UNITS=['Millimeters','Centimeters','Meters','Inches','Feet'];
+export const UNIT_NAME={Millimeters:'millimetres',Centimeters:'centimetres',Decimeters:'decimetres',Meters:'metres',Kilometers:'kilometres',Inches:'inches',Feet:'feet',Yards:'yards',Miles:'miles'};
 export async function readMassingFile(file){
   const rh=await loadRhino();
   const doc=rh.File3dm.fromByteArray(new Uint8Array(await file.arrayBuffer()));
-  const errors=[], notes=[];
-  if(!doc){ errors.push('This file could not be read as a Rhino model. Save it from Rhino 5 or later as a .3dm file.'); return {masses:null,errors,notes}; }
-  try{ return readDoc(rh,doc,errors,notes); }
+  if(!doc) return {model:null,masses:null,notes:[],errors:['This file could not be read as a Rhino model. Save it from Rhino 5 or later as a .3dm file.']};
+  let model;
+  try{ model=collect(rh,doc); }
   finally{ doc.delete(); }
+  const declared=model.unit, r=massesAt(model,declared||'Feet');
+  if(sized(r)) return {...r,model,guessed:false};
+  const metric=!declared||/Meters|Millimeters|Centimeters|Decimeters|Kilometers/.test(declared);
+  const order=metric?['Meters','Centimeters','Millimeters','Feet','Inches']:['Feet','Inches','Meters','Centimeters','Millimeters'];
+  for(const k of order){
+    if(k===declared) continue;
+    const t=massesAt(model,k);
+    if(!sized(t)) continue;
+    const L=model.span*(FEET[declared]||1);
+    t.notes.unshift('The file is set to '+(declared?UNIT_NAME[declared]:'no unit')+', but at that scale its largest building would be '+
+      (L<1?(L*12).toFixed(1)+' in':Math.round(L).toLocaleString('en-US')+' ft')+' across, so it is read in '+UNIT_NAME[k]+'. Change Units if that is wrong.');
+    return {...t,model,guessed:true};
+  }
+  return {...r,model,guessed:false};
+}
+/* true when a reading has buildings and the largest is 20 to 10,000 ft across */
+function sized(r){
+  if(!r.masses) return false;
+  const L=Math.max(...r.masses.map(m=>Math.max(m.w,m.d)));
+  return L>=20&&L<=10000;
 }
 
-function readDoc(rh,doc,errors,notes){
-  const unitKey=Object.keys(FEET).find(k=>rh.UnitSystem[k]===doc.settings().modelUnitSystem);
-  const u=unitKey?FEET[unitKey]:1;
-  if(!unitKey) notes.push('The model has no standard length unit, so it is read as feet.');
+/* the file's parts in model units, straightened, with nothing kept from rhino3dm: {unit, parts, angle,
+   span (the largest part's plan size), skip} */
+function collect(rh,doc){
+  const unitKey=Object.keys(FEET).find(k=>rh.UnitSystem[k]===doc.settings().modelUnitSystem)||null;
   const objs=doc.objects(), layers=doc.layers(), idefs=doc.instanceDefinitions();
   const isNil=id=>!id||/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(id);
   const visible=L=>{ for(let l=L,i=0;l&&i<50;i++){ if(!l.visible) return false; if(isNil(l.parentLayerId)) return true; l=layers.findId(l.parentLayerId); } return true; };
 
-  const parts=[], skip={hidden:0,other:0,flat:0,small:0};
+  const parts=[], skip={hidden:0,other:0};
   const cache=[];
   // adds one geometry as a part, transformed into model space by the block transforms xfs (outermost first)
   function addGeometry(geo,attr,layer,xfs,blockName){
@@ -129,7 +157,8 @@ function readDoc(rh,doc,errors,notes){
     const bb=g.getBoundingBox(true);
     if(!bb.isValid){ skip.other++; return; }
     const user={}; userText(attr,user); userText(layer,user);
-    parts.push({g,pts,z0:bb.min[2],z1:bb.max[2],flat:(bb.max[2]-bb.min[2])*u<FLAT,name:(attr.name||'').trim(),block:blockName||'',layer,user});
+    parts.push({g,pts,z0:bb.min[2],z1:bb.max[2],name:(attr.name||'').trim(),block:blockName||'',
+      layer:layer?{name:layer.name,path:layer.fullPath}:null,user});
   }
   for(let i=0;i<objs.count;i++){
     const o=objs.get(i), attr=o.attributes();
@@ -139,24 +168,33 @@ function readDoc(rh,doc,errors,notes){
     addGeometry(o.geometry(),attr,layer,[],'');
   }
 
-  // turn the model so the largest rectangular part lines up with the grid
+  // turn the model so the largest rectangular part (a solid before a flat one) lines up with the grid
   let angle=0;
   const ranked=parts.filter(p=>p.pts.length>2).map(p=>{ const h=hull(p.pts); return {p,h,area:polyArea(h)}; })
-    .sort((a,b)=>(a.p.flat-b.p.flat)||(b.area-a.area));
+    .sort((a,b)=>((a.p.z1-a.p.z0>0?0:1)-(b.p.z1-b.p.z0>0?0:1))||(b.area-a.area));
   for(const r of ranked){
     const m=minRect(r.h);
     if(r.area>0&&r.area>=0.97*m.area){ angle=Math.abs(m.angle)<0.002?0:m.angle; break; }
   }
   const c=Math.cos(-angle), s=Math.sin(-angle);
-  parts.forEach(p=>{
+  let span=0;
+  const out=parts.map(p=>{
     let bb;
     if(angle){ const g=p.g.duplicate(); g.rotate(-angle,[0,0,1],[0,0,0]); bb=g.getBoundingBox(true); g.delete(); }
     else bb=p.g.getBoundingBox(true);
-    p.box=[bb.min[0]*u,bb.min[1]*u,bb.max[0]*u,bb.max[1]*u];
-    p.z0*=u; p.z1*=u;
-    p.pts=p.pts.map(q=>[(q[0]*c-q[1]*s)*u,(q[0]*s+q[1]*c)*u]);
+    span=Math.max(span,bb.max[0]-bb.min[0],bb.max[1]-bb.min[1]);
+    return {box:[bb.min[0],bb.min[1],bb.max[0],bb.max[1]],z0:p.z0,z1:p.z1,
+      pts:p.pts.map(q=>[q[0]*c-q[1]*s,q[0]*s+q[1]*c]),name:p.name,block:p.block,layer:p.layer,user:p.user};
   });
   cache.forEach(g=>g.delete());
+  return {unit:unitKey,parts:out,angle,span,skip};
+}
+
+/* the buildings of a collected model, read in unitKey (one of FEET's keys) */
+export function massesAt(model,unitKey){
+  const u=FEET[unitKey]||1, errors=[], notes=[];
+  const parts=model.parts.map(p=>({...p,box:p.box.map(v=>v*u),z0:p.z0*u,z1:p.z1*u,pts:p.pts.map(q=>[q[0]*u,q[1]*u]),flat:(p.z1-p.z0)*u<FLAT}));
+  const skip={...model.skip,flat:0,small:0};
 
   // parts whose footprints overlap belong to one building
   const up=parts.map((p,i)=>i), root=i=>{ while(up[i]!==i) i=up[i]=up[up[i]]; return i; };
@@ -173,8 +211,12 @@ function readDoc(rh,doc,errors,notes){
     if(m==='flat') skip.flat++; else if(m==='small') skip.small++; else masses.push(m);
   }
   if(!masses.length){
-    errors.push('No building masses found. The model needs closed polysurfaces, extrusions or meshes, or a closed floor outline per level, on visible layers.');
-    return {masses:null,errors,notes};
+    // at the wrong scale, real masses come out too small, or so thin that they count as flat
+    const n=skip.small+skip.flat;
+    errors.push(n?
+      'No building masses found: '+n+' object'+(n>1?'s are':' is')+' too small or flat to be a building (under '+MIN_AREA+' SF, or under '+MIN_H+' ft tall) when read in '+UNIT_NAME[unitKey]+'. If the model is drawn in another unit, pick it under Units, or set it in Rhino (File ▸ Properties ▸ Units, without scaling).':
+      'No building masses found. The model needs closed polysurfaces, extrusions or meshes, or a closed floor outline per level, on visible layers.');
+    return {masses:null,unit:unitKey,errors,notes};
   }
 
   // a model far from the origin (site coordinates) is moved to it
@@ -195,13 +237,14 @@ function readDoc(rh,doc,errors,notes){
     used[name.toLowerCase()]=true; m.name=name;
   });
 
-  if(unitKey&&unitKey!=='Feet') notes.unshift('Lengths are in '+UNIT_NAME[unitKey]+' and are converted to feet.');
-  if(angle) notes.push('The model is turned '+Math.abs(angle*180/Math.PI).toFixed(1)+'° so its buildings line up with the grid.');
+  if(!model.unit) notes.push('The model has no standard length unit.');
+  if(unitKey!=='Feet') notes.unshift('Lengths are in '+UNIT_NAME[unitKey]+' and are converted to feet.');
+  if(model.angle) notes.push('The model is turned '+Math.abs(model.angle*180/Math.PI).toFixed(1)+'° so its buildings line up with the grid.');
   if(skip.hidden) notes.push(skip.hidden+' hidden object'+(skip.hidden>1?'s are':' is')+' left out.');
   if(skip.flat) notes.push(skip.flat+(skip.flat>1?' flat objects that aren’t floor plates (site surfaces, outlines) are':' flat object that isn’t a floor plate (a site surface or outline) is')+' left out.');
   if(skip.small) notes.push(skip.small+' small object'+(skip.small>1?'s':'')+' (under '+MIN_AREA+' SF or '+MIN_H+' ft tall) '+(skip.small>1?'are':'is')+' left out.');
   if(skip.other) notes.push(skip.other+' other object'+(skip.other>1?'s':'')+' (open curves, points, text, SubDs…) '+(skip.other>1?'are':'is')+' left out.');
-  return {masses,units:unitKey?UNIT_NAME[unitKey]:'feet (assumed)',notes,errors};
+  return {masses,unit:unitKey,notes,errors};
 }
 
 /* one building from its parts, or 'flat' / 'small' when it is not one */
@@ -241,8 +284,8 @@ function massOf(parts,u){
   const main=(vol.length?vol:flat).slice().sort((a,b)=>boxArea(b.box)*(b.z1-b.z0)-boxArea(a.box)*(a.z1-a.z0))[0];
   const named=parts.find(p=>p.name), leaf=main.layer?main.layer.name:'';
   m.name=named?named.name:main.block||(leaf&&!GENERIC.test(leaf.trim())?leaf.trim():'');
-  m.layer=main.layer?main.layer.fullPath:'';
-  m.on=!parts.some(p=>p.layer&&CONTEXT.test(p.layer.fullPath));
+  m.layer=main.layer?main.layer.path:'';
+  m.on=!parts.some(p=>p.layer&&CONTEXT.test(p.layer.path));
   const r1=v=>Math.round(v*10)/10;
   Object.assign(m,{w:r1(w),d:r1(d),h:r1(h),cx:(box[0]+box[2])/2,cy:(box[1]+box[3])/2,levels,fh:Math.round(fh*100)/100,src});
   return m;

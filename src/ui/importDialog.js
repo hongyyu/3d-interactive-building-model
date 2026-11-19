@@ -1,7 +1,7 @@
 import {DEMO} from '../data/demo.js';
 import {PROJECT,BUILDINGS} from '../data/project.js';
 import {readProgramFile} from '../data/importer.js';
-import {readMassingFile,massingProject,DEFAULT_FH} from '../data/massing.js';
+import {readMassingFile,massesAt,massingProject,DEFAULT_FH,UNITS,UNIT_NAME} from '../data/massing.js';
 import {state} from '../state.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 import {$,esc,fmt,clamp} from '../util.js';
@@ -78,20 +78,37 @@ const LEVELS_FROM={text:'levels from User Text',floors:'levels from its floor bo
 async function importMassing(file){
   let r;
   try{ r=await readMassingFile(file); }
-  catch(err){ r={masses:null,errors:['This file could not be read. Use a Rhino model (.3dm) saved from Rhino 5 or later.'],notes:[]}; }
-  if(!r.masses){ body.innerHTML=heading(file.name,true)+'<div class="msgs err"><b>This file can’t be imported</b>'+list(r.errors)+'</div>'; return; }
+  catch(err){ r={model:null,masses:null,errors:['This file could not be read. Use a Rhino model (.3dm) saved from Rhino 5 or later.'],notes:[]}; }
+  if(!r.model){ body.innerHTML=heading(file.name,true)+'<div class="msgs err"><b>This file can’t be imported</b>'+list(r.errors)+'</div>'; return; }
+  // only a program of the user's has departments to hand on; the demo's is not carried over
+  massing={file:file.name,model:r.model,prog:!!PROJECT.program,unitGuessed:r.guessed,rows:[]};
+  commit=()=>{ const p=massingResult(); if(p) openProject(p.project); };
+  showMasses(r);
+}
+/* the units choice: the file's unit, or the one Dado guessed (marked) when that one gave no buildings */
+function unitsHTML(){
+  const own=massing.model.unit, keys=!own||UNITS.includes(own)?UNITS:UNITS.concat([own]);
+  return '<label class="munits">Units<select id="munits"'+(massing.unitGuessed?' class="est"':'')+'>'+
+    keys.map(k=>'<option value="'+k+'"'+(k===massing.unit?' selected':'')+'>'+UNIT_NAME[k]+(k===own?' (set in the file)':'')+'</option>').join('')+'</select></label>';
+}
+/* the dialog for one reading of the model (a unit): its masses as rows, or why there are none */
+function showMasses(r){
+  const prog=massing.prog, f=massing.file;
+  massing.unit=r.unit;
+  if(!r.masses){
+    massing.rows=[]; ok.hidden=okProg.hidden=true;
+    body.innerHTML=heading(f,true)+unitsHTML()+'<div class="msgs err"><b>This file can’t be imported</b>'+list(r.errors)+'</div>';
+    return;
+  }
   const byName={};
   BUILDINGS.forEach((b,i)=>{ byName[b.name.trim().toLowerCase()]=i; });
-  // only a program of the user's has departments to hand on; the demo's is not carried over
-  const prog=!!PROJECT.program;
   const rows=r.masses.map(m=>{ const i=prog?byName[m.name.toLowerCase()]:null; return {...m,from:i==null?'':BUILDINGS[i].id,edited:false,est:m.src==='height',anon:!!m.unnamed}; });
   // masses that take over a building come first, in the current order; the rest west to east
   const rank=m=>m.from?BUILDINGS.findIndex(b=>b.id===m.from):BUILDINGS.length;
   rows.sort((a,b)=>rank(a)-rank(b));
-  massing={file:file.name,rows,units:r.units,notes:r.notes,prog};
-  commit=()=>{ const p=massingResult(); if(p) openProject(p.project); };
-  ok.hidden=false; okProg.hidden=!!PROJECT.program;
-  body.innerHTML=heading(file.name,true)+'<dl class="kv" id="mkv"></dl>'+
+  massing.rows=rows;
+  ok.hidden=false; okProg.hidden=prog;
+  body.innerHTML=heading(f,true)+'<dl class="kv" id="mkv"></dl>'+unitsHTML()+
     (!prog?'<div class="msgs warn" id="mdemo"><b>No program loaded yet</b><p>These buildings come in empty. Import your program (Excel or CSV) next; its Building column places departments on the masses of the same name.</p></div>':'')+
     '<p class="mhint" id="mhint" hidden></p>'+
     '<div class="masses'+(prog?'':' noprog')+'" role="group" aria-label="Masses found"><div class="mhead"><span></span><span>Building</span><span>Levels</span>'+(prog?'<span>Departments from</span>':'')+'</div>'+
@@ -132,11 +149,12 @@ function updateMassing(){
   // what is still a guess among the ticked masses
   const est=on.filter(m=>m.est).length, anon=on.filter(m=>m.anon).length, hint=$('#mhint');
   const parts=[];
+  if(massing.unitGuessed) parts.push('the units are a guess');
   if(est) parts.push(est+(est>1?' level counts are':' level count is')+' estimated from height');
   if(anon) parts.push(anon+(anon>1?' buildings have':' building has')+' no name in the file');
   hint.hidden=!parts.length;
   hint.textContent=parts.length?'Check the marked values: '+parts.join(', and ')+'.':'';
-  $('#mkv').innerHTML='<div><dt>Buildings</dt><dd>'+n+' of '+massing.rows.length+'</dd></div><div><dt>Units</dt><dd>'+esc(massing.units)+'</dd></div>'+
+  $('#mkv').innerHTML='<div><dt>Buildings</dt><dd>'+n+' of '+massing.rows.length+'</dd></div>'+
     (massing.prog?'<div><dt>Departments</dt><dd>'+Object.keys(p?p.project.depts:{}).length+'</dd></div>'+
       '<div><dt>Placed · unassigned</dt><dd>'+(p?p.placed+' · '+p.unassigned:'–')+'</dd></div>':
       '<div><dt>Program</dt><dd>Not loaded yet</dd></div>');
@@ -181,7 +199,12 @@ export function bindImport(){
     if(file) importFile(file);
   }));
   body.addEventListener('input',e=>{ if(massing) onMassInput(e); });
-  body.addEventListener('change',e=>{ if(massing&&e.target.dataset.m==='levels'&&!(parseInt(e.target.value,10)>=1)) e.target.value=massing.rows[+e.target.closest('.mrow').dataset.i].levels; });
+  body.addEventListener('change',e=>{
+    if(!massing) return;
+    // another unit sizes the buildings again (and starts the rows over)
+    if(e.target.id==='munits'){ massing.unitGuessed=false; showMasses(massesAt(massing.model,e.target.value)); $('#munits').focus(); return; }
+    if(e.target.dataset.m==='levels'&&!(parseInt(e.target.value,10)>=1)) e.target.value=massing.rows[+e.target.closest('.mrow').dataset.i].levels;
+  });
   // Enter in a field would submit the form with its first button, Cancel
   body.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.matches('input')) e.preventDefault(); });
   // The import is applied on the submit itself: the close event comes a task later, and by then the
