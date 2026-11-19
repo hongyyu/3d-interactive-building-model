@@ -6,7 +6,8 @@ import {updateFloorTagText} from '../scene/overlay.js';
 import {MAX_LEVELS} from '../scene/constants.js';
 import {refreshUI} from './panels.js';
 import {insertLevel,removeLevel,moveLevel} from './actions.js';
-import {menuKeys} from './menu.js';
+import {openAddDept} from './deptDialog.js';
+import {menuKeys,placeMenu} from './menu.js';
 
 /* ---------- level rows in the right panel ----------
    Rows run from the top level down to Level 1. Each has a grip and a ⋯ menu. Dragging the grip moves
@@ -85,17 +86,11 @@ function openMenu(btn,focusFirst){
   label.firstChild.nodeValue='Remove Level '+(f+1);
   label.lastChild.textContent=k?k+(k>1?' departments move':' department moves')+' to Unassigned':'';
   menu.hidden=false; btn.setAttribute('aria-expanded','true');
-  placeMenu();
+  place();
   if(focusFirst) menu.querySelector('[role=menuitem]:not([aria-disabled=true])').focus();
 }
-/* below the button, right-aligned to it, or above it when there is no room below; closes once the
-   button scrolls out of the panel */
-function placeMenu(){
-  const r=mbtn.getBoundingClientRect(), p=rightEl.getBoundingClientRect(), m=menu.getBoundingClientRect();
-  if(r.bottom<p.top||r.top>p.bottom){ closeMenu(false); return; }
-  let top=r.bottom+6; if(top+m.height>innerHeight-8) top=r.top-6-m.height;
-  menu.style.top=Math.max(8,top)+'px'; menu.style.left=Math.max(8,r.right-m.width)+'px';
-}
+/* closes once the button scrolls out of the panel */
+function place(){ if(!placeMenu(menu,mbtn,rightEl)) closeMenu(false); }
 function closeMenu(refocus){
   if(menu.hidden) return;
   menu.hidden=true;
@@ -137,13 +132,14 @@ export function bindLevels(){
     if(!it||it.getAttribute('aria-disabled')==='true') return;
     const a=it.dataset.act, bid=state.sel, f=mf;
     closeMenu(false);
-    if(a==='lvl-above') insertLevel(bid,f+1);
+    if(a==='lvl-dept') openAddDept(f);
+    else if(a==='lvl-above') insertLevel(bid,f+1);
     else if(a==='lvl-below') insertLevel(bid,f);
     else if(a==='lvl-remove') removeLevel(bid,f);
   });
   menu.addEventListener('keydown',e=>{ if(!menuKeys(menu,e)&&e.key==='Tab') closeMenu(false); });
   document.addEventListener('pointerdown',e=>{ if(!menu.hidden&&!menu.contains(e.target)&&e.target.closest('[data-act=lvlmenu]')!==mbtn) closeMenu(false); });
-  rightEl.addEventListener('scroll',()=>{ if(!menu.hidden) placeMenu(); });
+  rightEl.addEventListener('scroll',()=>{ if(!menu.hidden) place(); });
   window.addEventListener('resize',()=>closeMenu(false));
   window.addEventListener('keydown',e=>{
     if(e.key!=='Escape') return;

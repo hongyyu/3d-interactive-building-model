@@ -56,7 +56,7 @@ function makeBuilding(def){
   R.padMat=new THREE.MeshLambertMaterial({color:0xf1f3f6});
   R.shellEdge=new THREE.LineBasicMaterial({color:0xb7bfcb,transparent:true,opacity:0.9});
   R.padEdge=new THREE.LineBasicMaterial({color:0xdde1e7,transparent:true,opacity:1});
-  const pad=new THREE.Mesh(boxGeo,R.padMat);
+  const pad=R.pad=new THREE.Mesh(boxGeo,R.padMat);
   pad.scale.set(W+3,PAD,Dp+3); pad.position.set(def.x*S,PAD/2,def.z*S); pad.receiveShadow=true;
   pad.add(new THREE.LineSegments(edgeGeo,R.padEdge)); g.add(pad);
   for(let f=0;f<n;f++) addLevelMeshes(R);
@@ -119,9 +119,37 @@ export function setLabelHTML(d){
   d.lbl.innerHTML='<b>'+esc(dd.n)+'</b><span>'+fmt(dd.a)+' SF</span>';
   d.lm=-1; d.nw=-1;
 }
+/* adds building def's meshes and tag to the scene; with drop, its levels start lifted and drop into
+   place like an added level */
+export function addBuildingMeshes(def,drop){
+  const R=B[def.id]=makeBuilding(def);
+  if(drop) R.lift.fill(1);
+  return R;
+}
+/* after building bid's floor plate changed: resizes its pad and slabs, which keep the size they were
+   made with (the shells, voids and departments follow def every frame) */
+export function fitBuildingMeshes(bid){
+  const R=B[bid], def=R.def, W=def.w*S, Dp=def.d*S;
+  R.pad.scale.set(W+3,PAD,Dp+3); R.pad.position.set(def.x*S,PAD/2,def.z*S);
+  R.slabs.forEach(sl=>sl.scale.set(W,SLAB,Dp));
+}
+/* adds department id's mesh and label; it shows once a level holds it */
+export function addDeptMeshes(id){ return D[id]=makeDept(id); }
+export function removeDeptMeshes(id){
+  const d=D[id]; if(!d) return;
+  scene.remove(d.mesh); d.mat.dispose(); d.lbl.remove();
+  delete D[id];
+}
+/* removes building bid's meshes, materials and tag; shared geometry stays */
+export function removeBuildingMeshes(bid){
+  const R=B[bid]; if(!R) return;
+  scene.remove(R.g); R.tag.remove();
+  [R.shellMat,R.padMat,R.shellEdge,R.padEdge,...R.slabMats,...R.voids.map(v=>v.material)].forEach(m=>m.dispose());
+  delete B[bid];
+}
 export function buildScene(){
-  BUILDINGS.forEach(def=>{B[def.id]=makeBuilding(def);});
-  for(const k in DEPTS) D[k]=makeDept(k);
+  BUILDINGS.forEach(def=>addBuildingMeshes(def,false));
+  for(const k in DEPTS) addDeptMeshes(k);
   if(!dropBox){
     dropBox=new THREE.LineSegments(edgeGeo,dropInk); dropBox.visible=false; scene.add(dropBox);
     slotBox=new THREE.LineSegments(edgeGeo,dropInk); slotBox.visible=false; scene.add(slotBox);
@@ -129,17 +157,8 @@ export function buildScene(){
 }
 /* removes the current project's meshes, materials and overlay elements; shared geometry stays */
 export function clearScene(){
-  for(const bid in B){
-    const R=B[bid];
-    scene.remove(R.g); R.tag.remove();
-    [R.shellMat,R.padMat,R.shellEdge,R.padEdge,...R.slabMats,...R.voids.map(v=>v.material)].forEach(m=>m.dispose());
-    delete B[bid];
-  }
-  for(const id in D){
-    const d=D[id];
-    scene.remove(d.mesh); d.mat.dispose(); d.lbl.remove();
-    delete D[id];
-  }
+  for(const bid in B) removeBuildingMeshes(bid);
+  for(const id in D) removeDeptMeshes(id);
 }
 /* The default sun and grid cover a site about 1200 ft across around the origin. A campus that
    extends past them gets a recentred, enlarged shadow box and grid. */

@@ -1,12 +1,13 @@
 import {PROJECT,CATS,DEPTS,BUILDINGS,setProjectData} from '../data/project.js';
-import {state,INIT_LEVELS,INIT_AREAS,INIT_CAT_COLORS,INIT_DEPT_COLORS,initState,isOverview} from '../state.js';
+import {state,BDEF,INIT_LAYOUT,INIT_CAT_COLORS,INIT_DEPT_COLORS,initState,isOverview} from '../state.js';
 import {hintEl} from '../dom.js';
 import {$,clamp} from '../util.js';
-import {B,D,setLabelHTML,clearScene,buildScene,fitSite,setLevelCount,paintDepts} from '../scene/scene.js';
+import {B,D,setLabelHTML,clearScene,buildScene,fitSite,setLevelCount,paintDepts,addBuildingMeshes,removeBuildingMeshes,fitBuildingMeshes,addDeptMeshes,removeDeptMeshes} from '../scene/scene.js';
 import {retarget,snapView,setViewRate} from '../scene/view.js';
 import {rebuildFloorTags} from '../scene/overlay.js';
 import {relayout,levelOf} from '../layout/plan.js';
-import {MAX_LEVELS} from '../scene/constants.js';
+import {freeSpot} from '../layout/site.js';
+import {MAX_LEVELS,MAX_BUILDINGS} from '../scene/constants.js';
 import {renderRight,refreshUI} from './panels.js';
 
 export const HINTS={
@@ -65,14 +66,67 @@ export function setArea(id,v){
   DEPTS[id].a=clamp(Math.round(v),500,500000);
   setLabelHTML(D[id]); relayout(false); refreshUI();
 }
-/* f is a level of the selected building, or -1 for the Unassigned tray */
-export function moveDeptToLevel(id,f){
-  const lv=state.levels[state.sel], loc=levelOf(state.sel,id), t=state.unassigned.indexOf(id);
-  if(loc){ if(loc.f===f)return; lv[loc.f].splice(loc.i,1); }
-  else if(t>=0){ if(f<0)return; state.unassigned.splice(t,1); }
-  else return;
-  if(f<0) state.unassigned.push(id); else lv[f].push(id);
+/* ---------- departments ---------- */
+/* where department id is: {bid, f, i} on level f of building bid, {bid: null, f: -1, i} in the tray,
+   or null */
+function findDept(id){
+  for(const b of BUILDINGS){ const l=levelOf(b.id,id); if(l) return {bid:b.id,f:l.f,i:l.i}; }
+  const t=state.unassigned.indexOf(id);
+  return t>=0?{bid:null,f:-1,i:t}:null;
+}
+function takeDept(id){
+  const p=findDept(id);
+  if(p){ if(p.bid) state.levels[p.bid][p.f].splice(p.i,1); else state.unassigned.splice(p.i,1); }
+  return p;
+}
+/* moves department id to level f of building bid, or to the tray with f = -1. Moved into another
+   building than the selected one, it takes the view along and stays selected. */
+export function moveDept(id,bid,f){
+  const p=findDept(id); if(!p) return;
+  if(f<0){ if(!p.bid) return; }
+  else if(!state.levels[bid]||f>=state.levels[bid].length||(p.bid===bid&&p.f===f)) return;
+  takeDept(id);
+  if(f<0) state.unassigned.push(id); else state.levels[bid][f].push(id);
+  if(f>=0&&bid!==state.sel){ selectBuilding(bid,true); state.selDept=id; renderRight(); return; }
   relayout(false); refreshUI();
+}
+/* a department id not used by a current department or by one of the loaded project, which Reset
+   layout may bring back */
+function newDeptId(){
+  const used=JSON.parse(INIT_LAYOUT).depts;
+  let k=1; while(DEPTS['d'+k]||used['d'+k]) k++;
+  return 'd'+k;
+}
+/* adds a department {name, c (category key), a (SF)} on level f of building bid, or to the tray with
+   f = -1, and selects it; it grows into place while the others on its level make room */
+export function addDept(spec,bid,f){
+  if(!CATS[spec.c]) return null;
+  const id=newDeptId();
+  DEPTS[id]={n:spec.name,c:spec.c,a:clamp(Math.round(spec.a),500,500000)};
+  const d=addDeptMeshes(id);
+  if(f>=0&&state.levels[bid]&&f<state.levels[bid].length) state.levels[bid][f].push(id); else state.unassigned.push(id);
+  relayout(false);
+  d.vw=0;
+  state.selDept=id;
+  refreshUI();
+  return id;
+}
+/* takes department id out of the project */
+export function deleteDept(id){
+  if(!DEPTS[id]) return;
+  takeDept(id);
+  delete DEPTS[id]; removeDeptMeshes(id);
+  if(state.selDept===id) state.selDept=null;
+  relayout(false); refreshUI();
+}
+export function renameDept(id,name){
+  if(!DEPTS[id]||!name) return;
+  DEPTS[id].n=name; setLabelHTML(D[id]); refreshUI();
+}
+/* a department without its own colour takes the new category's colour */
+export function setDeptCat(id,c){
+  if(!DEPTS[id]||!CATS[c]) return;
+  DEPTS[id].c=c; paintDepts(); refreshUI();
 }
 /* after a building's level count changes: rebuild its level meshes and floor tags, then reframe
    the camera so the new height fits; with drop, a level added on top drops into place */
@@ -108,17 +162,107 @@ export function moveLevel(bid,from,to){
   lv.splice(to,0,lv.splice(from,1)[0]);
   relayout(false); refreshUI();
 }
+/* ---------- buildings ---------- */
+/* a building id not used by a current building or by one of the loaded project, which Reset layout
+   may bring back */
+function newBuildingId(){
+  const used=new Set(JSON.parse(INIT_LAYOUT).buildings.map(b=>b.id));
+  let k=1; while(BDEF['b'+k]||used.has('b'+k)) k++;
+  return 'b'+k;
+}
+/* takes building bid out of the project and the scene; its departments are not touched */
+function dropBuilding(bid){
+  BUILDINGS.splice(BUILDINGS.findIndex(b=>b.id===bid),1);
+  delete BDEF[bid]; delete state.levels[bid];
+  removeBuildingMeshes(bid);
+}
+/* after buildings were removed or brought back: refit the sun and grid, rebuild the floor tags and
+   panels, and reframe (keeping the 3D Massing camera angles with keepAngles) */
+function buildingsChanged(keepAngles){
+  fitSite();
+  relayout(false);
+  rebuildFloorTags();
+  refreshUI(); updateHint(); retarget(keepAngles); setViewRate(3.2);
+}
+/* adds a building with n empty levels and focuses it; spec is {name, w, d, fh, n}, sizes in ft. It
+   goes on the nearest free spot of the site that the default 3D Massing view sees (freeSpot) and its
+   levels drop into place. Returns its id, or null at MAX_BUILDINGS. */
+export function addBuilding(spec){
+  if(BUILDINGS.length>=MAX_BUILDINGS) return null;
+  const n=clamp(Math.round(spec.n),1,MAX_LEVELS), id=newBuildingId(), p=freeSpot(spec.w,spec.d);
+  const def={id,name:spec.name,w:spec.w,d:spec.d,fh:spec.fh,x:p.x,z:p.z,levels:Array.from({length:n},()=>[])};
+  BUILDINGS.push(def); BDEF[id]=def;
+  state.levels[id]=def.levels.map(()=>[]);
+  addBuildingMeshes(def,true);
+  fitSite();
+  selectBuilding(id,true);
+  return id;
+}
+/* renames or resizes building bid; spec is {name, w, d, fh}, sizes in ft. It keeps its site
+   position (centre), levels and departments. */
+export function editBuilding(bid,spec){
+  const def=BDEF[bid]; if(!def) return;
+  const sized=def.w!==spec.w||def.d!==spec.d||def.fh!==spec.fh;
+  def.name=spec.name; def.w=spec.w; def.d=spec.d; def.fh=spec.fh;
+  if(sized){ fitBuildingMeshes(bid); fitSite(); relayout(false); }
+  refreshUI();
+  if(sized){ retarget(true); setViewRate(3.2); }
+}
+/* deletes building bid; its departments go to the Unassigned tray, level by level. A project keeps
+   at least one building. When bid was the selected building, 3D Massing goes back to the campus
+   overview, and Axon and Stacking show the next building in the list. */
+export function deleteBuilding(bid){
+  const i=BUILDINGS.findIndex(b=>b.id===bid);
+  if(i<0||BUILDINGS.length<=1) return;
+  state.levels[bid].forEach(lv=>lv.forEach(id=>state.unassigned.push(id)));
+  dropBuilding(bid);
+  if(state.sel===bid){
+    state.sel=BUILDINGS[Math.min(i,BUILDINGS.length-1)].id;
+    state.selDept=null;
+    if(state.mode==='mass') state.focus='campus';
+  }
+  buildingsChanged(false);
+}
+/* back to the loaded project's program and buildings: departments added in the app go, deleted ones
+   come back, and every department gets its loaded name, category, area and place; added buildings
+   go, deleted ones come back in their place in the list, and every building gets its loaded name,
+   size and level count. Colours are left alone, except that a department that comes back has its
+   loaded colour. */
 export function resetLayout(){
-  const init=JSON.parse(INIT_LEVELS);
-  let resized=false;
-  init.levels.forEach((lv,i)=>{
-    const bid=BUILDINGS[i].id;
-    if(state.levels[bid].length!==lv.length){ resized=true; setLevelCount(bid,lv.length,true); }
+  const init=JSON.parse(INIT_LAYOUT), loaded=new Set(init.buildings.map(b=>b.id));
+  let sites=false, resized=false;
+  for(const id in DEPTS) if(!init.depts[id]){ delete DEPTS[id]; removeDeptMeshes(id); }
+  for(const id in init.depts){
+    const s=init.depts[id], d=DEPTS[id];
+    if(!d){ DEPTS[id]=s; addDeptMeshes(id); continue; }
+    d.n=s.n; d.c=s.c; d.a=s.a;
+    setLabelHTML(D[id]);
+  }
+  paintDepts();
+  BUILDINGS.filter(b=>!loaded.has(b.id)).forEach(b=>{ dropBuilding(b.id); sites=true; });
+  init.buildings.forEach((def,i)=>{
+    const cur=BDEF[def.id];
+    if(!cur){
+      BUILDINGS.splice(i,0,def); BDEF[def.id]=def;
+      addBuildingMeshes(def,true); sites=true;
+      return;
+    }
+    cur.name=def.name;
+    if(cur.w!==def.w||cur.d!==def.d||cur.fh!==def.fh){ cur.w=def.w; cur.d=def.d; cur.fh=def.fh; fitBuildingMeshes(def.id); sites=true; }
+  });
+  init.buildings.forEach(def=>{
+    const bid=def.id, lv=def.levels.map(a=>a.slice());
+    if(B[bid].shells.length!==lv.length){ resized=true; setLevelCount(bid,lv.length,true); }
     state.levels[bid]=lv;
   });
   state.unassigned=init.unassigned;
-  for(const k in INIT_AREAS){ DEPTS[k].a=INIT_AREAS[k]; setLabelHTML(D[k]); }
   state.selDept=null; state.isolate=null;
+  if(sites){
+    // the selected building was one that was added
+    if(!BDEF[state.sel]){ state.sel=BUILDINGS[0].id; if(state.mode==='mass') state.focus='campus'; }
+    buildingsChanged(true);
+    return;
+  }
   relayout(false);
   if(resized) rebuildFloorTags();
   refreshUI();
@@ -143,7 +287,7 @@ export function useCatColor(id){
 /* back to the colours of the loaded project; the layout is kept */
 export function resetColors(){
   for(const k in INIT_CAT_COLORS) CATS[k].color=INIT_CAT_COLORS[k];
-  for(const k in INIT_DEPT_COLORS){ if(INIT_DEPT_COLORS[k]) DEPTS[k].color=INIT_DEPT_COLORS[k]; else delete DEPTS[k].color; }
+  for(const k in DEPTS){ if(INIT_DEPT_COLORS[k]) DEPTS[k].color=INIT_DEPT_COLORS[k]; else delete DEPTS[k].color; }
   paintDepts(); refreshUI();
 }
 /* replaces the whole project (demo or imported) and rebuilds the scene from it */
