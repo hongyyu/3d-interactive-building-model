@@ -2,14 +2,14 @@ import * as THREE from 'three';
 import {state,BDEF} from '../state.js';
 import {stage,leftEl,rightEl} from '../dom.js';
 import {RM} from '../util.js';
-import {S,BASE,EXPLODE,GRIDOP} from './constants.js';
+import {S,BASE,EXPLODE,GRIDOP,MASS_AZ,MASS_EL} from './constants.js';
 import {renderer,scene,camera} from './scene.js';
 import {campusBounds} from '../layout/site.js';
 
 /* view.lb / viewT.base: the view size the current framing started from (log and plain), so zooming
    can be measured against it (see textScale) */
-export const view={az:-0.62,el:0.5,lf:Math.log(30),ls:Math.log(50),lb:Math.log(50),t:new THREE.Vector3(6.5,3,1.8)};
-export const viewT={az:-0.62,el:0.5,fov:30,s:50,base:50,t:new THREE.Vector3(6.5,3,1.8)};
+export const view={az:MASS_AZ,el:MASS_EL,lf:Math.log(30),ls:Math.log(50),lb:Math.log(50),t:new THREE.Vector3(6.5,3,1.8)};
+export const viewT={az:MASS_AZ,el:MASS_EL,fov:30,s:50,base:50,t:new THREE.Vector3(6.5,3,1.8)};
 export let explode=0, explodeT=0, gridT=1, viewRate=10;
 /* counts reframes (retarget calls), so the overlay can start its labels afresh after one */
 export let reframes=0;
@@ -47,12 +47,12 @@ function targetView(){
     if(state.focus==='campus'){
       // centre snapped to 1 ft, extent rounded up to 10 ft; aim at a fifth of the tallest height
       const c=campusBounds();
-      return {az:-0.62,el:0.5,fov:30,s:fit(Math.ceil(c.r),Math.ceil(c.h),0.5,asp,1.1),
+      return {az:MASS_AZ,el:MASS_EL,fov:30,s:fit(Math.ceil(c.r),Math.ceil(c.h),MASS_EL,asp,1.1),
         t:new THREE.Vector3(Math.round(c.cx*10)/10,Math.round(c.h*0.2),Math.round(c.cz*10)/10)};
     }
     // close enough that a floor's facade has room for a label's name and SF lines
     const H=n*fhU, rxz=Math.max(Math.hypot(W,Dp)/2*1.5,16);
-    return {az:-0.62,el:0.5,fov:30,s:fit(rxz,H,0.5,asp,1.1),t:new THREE.Vector3(cx,H/2,cz)};
+    return {az:MASS_AZ,el:MASS_EL,fov:30,s:fit(rxz,H,MASS_EL,asp,1.1),t:new THREE.Vector3(cx,H/2,cz)};
   }
   const pitchE=fhU*(1+EXPLODE[state.mode]), H=(n-1)*pitchE+fhU;
   if(state.mode==='axon'){
