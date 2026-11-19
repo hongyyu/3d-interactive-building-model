@@ -59,3 +59,20 @@ export async function demoMassing() {
   objs.add(box({x: 600, z: 300, w: 100, d: 100}, 0, 40), attrs(massing));
   return Buffer.from(doc.toByteArray());
 }
+
+/* A fictional model drawn in metres but set to millimetres, as a model started from Rhino's
+   millimetre template often is: two boxes, North Wing 40 × 20 × 16 m and Clinic 24 × 24 × 12 m. */
+export async function wrongUnitsMassing() {
+  const rh = await require('rhino3dm')();
+  const doc = new rh.File3dm();
+  doc.settings().modelUnitSystem = rh.UnitSystem.Millimeters;
+  const l = new rh.Layer(); l.name = 'Massing';
+  const layer = doc.layers().add(l);
+  const add = (name, x0, y0, w, d, h) => {
+    const a = new rh.ObjectAttributes(); a.layerIndex = layer; a.name = name;
+    doc.objects().add(rh.Brep.createFromBoundingBox(new rh.BoundingBox([x0, y0, 0], [x0 + w, y0 + d, h])), a);
+  };
+  add('North Wing', 0, 0, 40, 20, 16);
+  add('Clinic', 50, 0, 24, 24, 12);
+  return Buffer.from(doc.toByteArray());
+}

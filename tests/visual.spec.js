@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 import fs from 'node:fs';
-import {demoMassing} from './massing-fixture.js';
+import {demoMassing, wrongUnitsMassing} from './massing-fixture.js';
 
 // Replays a fixed scenario on the demo program. Each step checks a text snapshot of the
 // panels and overlay labels plus a screenshot of the 3D stage; a few steps also check the
@@ -301,6 +301,33 @@ test('a Rhino massing replaces the buildings and keeps the program', async ({pag
   await settle(page);
   // the massing is the demo campus, so the model must look exactly like it
   await stageShot(page, '00-initial.png', false);
+  expect(errors).toEqual([]);
+});
+
+test('a Rhino model set to the wrong units is read at a sensible scale', async ({page}) => {
+  const errors = await open(page);
+  const body = page.locator('#importBody'), units = page.locator('#munits');
+  await page.setInputFiles('#massFile', {name: 'wrong-units.3dm', mimeType: 'application/octet-stream', buffer: await wrongUnitsMassing()});
+  await expect(body.locator('.mrow')).toHaveCount(2, {timeout: 30_000});
+  // set to millimetres, the boxes would be a couple of inches across, so they are read in metres,
+  // and the guess is marked and explained
+  await expect(units).toHaveValue('Meters');
+  await expect(units).toHaveClass(/\best\b/);
+  await expect(body.locator('#mhint')).toContainText('the units are a guess');
+  await expect(body.locator('.msgs:not(.warn)')).toContainText('The file is set to millimetres, but at that scale its largest building would be 1.6 in across, so it is read in metres.');
+  await expect(body.locator('.mrow').nth(0).locator('.mmeta')).toContainText('131 × 66 ft · 53 ft tall');
+  // in the file's own unit nothing is building-sized, and the error says to check the units
+  await units.selectOption('Millimeters');
+  await expect(body.locator('.msgs.err')).toContainText('too small or flat to be a building');
+  await expect(body.locator('.msgs.err')).toContainText('pick it under Units');
+  await expect(page.locator('#importOk')).toBeHidden();
+  // back in metres; a unit picked by hand is no longer marked as a guess
+  await units.selectOption('Meters');
+  await expect(body.locator('.mrow')).toHaveCount(2);
+  await expect(units).not.toHaveClass(/\best\b/);
+  await page.click('#importOk');
+  await expect(page.locator('#left')).toContainText('North Wing');
+  await expect(page.locator('#left')).toContainText('Clinic');
   expect(errors).toEqual([]);
 });
 
