@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Interactive massing and stacking diagram for a medical campus program (v0.1 prototype). It's a Vite app written in vanilla JS ES modules. Three.js is pinned to **r128** (`three@0.128.0` from npm).
+**Dado** is an interactive massing and stacking diagram for a medical campus program (v0.1 prototype). It's a Vite app written in vanilla JS ES modules. Three.js is pinned to **r128** (`three@0.128.0` from npm).
 
 ```sh
 npm install
@@ -38,6 +38,11 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 - **Roadmap:** `FEATURE_PLAN.md` describes the planned phases: CSV/XLSX program import, layout options and compare, JPEG/CSV export, Rhino `.3dm` import (rectangular masses are done; irregular floor plates are not) and vertical circulation. Upgrading Three.js beyond r128 is a Phase 3 task. Until then, stick to the r128 API, and import any addons from `three/examples/jsm/...` of 0.128.0.
 - **Data privacy constraint:** the repo and the Pages site are public. `src/data/demo.js` must hold only the fictional demo program, so never commit real client data. Test fixtures must be fictional too. User files are parsed in the browser and never uploaded. There is no backend.
 - **Copyright notice:** the project is proprietary (see `LICENSE`); never add an open-source license. "© 2026 Hongyu Li and Zining Cheng" appears in `LICENSE`, the README's License section, the `author` and `copyright` meta tags and the start screen footer (`.wlegal`) in `index.html`, the report footer (`ui/report.js`) and a comment at the top of the entry JS chunk (`postBanner` in `vite.config.js`). Keep them in step. The banner skips the lazy SheetJS chunk, which is third-party code.
+- **Name and logo:** the app is Dado (the solid block of a pedestal; Italian for a die). The mark is three floors stacked with a gap between them, the middle one turned 14°, drawn in isometric line art.
+  - It is the `#mark` symbol at the top of `index.html`. The header's `#home` button and the start screen title use it, and each sets its own `stroke-width`.
+  - `public/favicon.svg` (heavier lines, dark-mode colours), `public/favicon-32.png` and `public/apple-touch-icon.png` are the same drawing, so redraw them together.
+  - The wordmark is Jost 400 set lowercase (`--brand` in `style.css`), on the header title and the start screen title. `index.html` loads only the letters of "Dado" (`text=Dado`). The name stays "Dado" in text: the page title, the report and the PDF name.
+  - The GitHub repo and the Pages URL keep the old name, `3d-interactive-building-model`.
 
 ## Architecture
 
@@ -82,6 +87,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 **Template** (`scripts/build-template.mjs`): ExcelJS (a dev dependency) writes the template from `DEMO`, with dropdowns, number checks and an Instructions sheet. Its sheet and column names must stay in step with `COLS` in the importer. `scripts/build-massing.mjs` writes `campus_massing.3dm`, one named box per demo building with User Text `levels` and `floor_to_floor`, so it imports back exactly.
 
 **Start screen** (`ui/welcome.js`): `#welcome` is visible in the markup and `#app` starts `inert`, so the app never flashes before boot.
+- Its brand block (`.wbrand`) has the app header's size and position, so the mark and name stay put when it closes and only the line under the name changes.
 - The illustration is an isometric SVG generated from the demo's first building. It is animated purely in CSS: `.wf` drops each floor in, `.wx` explodes the stack, and both run on the same 10 s loop.
 - `showWelcome()` and `closeWelcome()` toggle it, and the brand mark `#home` reopens it. `main.js` skips rendering while it is open.
 - An import started from the start screen closes it when the import dialog closes with `returnValue === 'ok'`. `importDialog.js` clears `returnValue` on open, because Escape keeps the old value.
@@ -105,7 +111,7 @@ There is no lint tooling. Vite 8 needs Node 20.19+ or 22.12+.
 **Level rows** (`ui/levels.js`): each row in the right panel has a grip and a ⋯ menu (`#levelMenu`, shared, `position: fixed`).
 - Dragging a grip rewrites `state.levels[bid]` live whenever the drop slot changes, then calls `relayout()`, so the building follows the drag. The panel isn't re-rendered until the drop: rows slide with transforms and are renumbered in place. Escape restores the snapshot taken at the start.
 - Arrow keys on a focused grip call `moveLevel()`. Hovering or dragging a row sets `hotIds` (`state.js`), which `scene/update.js` lights up.
-- `state.panelOpen` (the fold button) hides everything in the right panel below its title row. Arrow-key navigation for both menus is in `ui/menu.js`. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
+- `state.panelOpen` (the fold button) hides everything in the right panel below its title row. `state.buildingsOpen` does the same for the left panel's Buildings section. Arrow-key navigation for both menus is in `ui/menu.js`. Area edits change `DEPTS[id].a` in place. `initState()` resets selection and stacking for a newly loaded project and snapshots `INIT_LEVELS` / `INIT_AREAS` for "Reset layout". `B` and `D` (`scene/scene.js`) hold the per-building and per-department runtime records: meshes, materials, overlay elements and animation values. A tray department keeps its `D` record but has `b = null`, so it is hidden. `moveDeptToLevel(id, -1)` sends a department to the tray.
 
 **Shared mutable variables:** a value that is reassigned across modules is an exported `let`. Only its home module reassigns it, because ES module imports are read-only and assigning to one from another module throws.
 - `drag` and `hoverId` live in `state.js` and change through `setDrag` and `setHoverId`. `INIT_LEVELS` is reassigned only by `initState()`.
@@ -135,7 +141,7 @@ Axon and Stacking get their near-orthographic look from a tiny FOV (4° and 0.2�
 - Only the hovered or selected department gets a label. Hovering a department also glows its whole building.
 - A click on a department, a building tag or a card focuses that building (`state.focus = 'building'`). A click on a department also selects it, and dragging orbits instead of moving departments.
 - The right panel shows campus totals, the tray and "Program by building". "Program by category" in the left panel covers the whole campus.
-- `showCampus()` (the "Full campus" card) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Stacking and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
+- `showCampus()` (the "Full campus" button above the building cards) returns from any building or mode. `setMode()` sets the focus to `building` for Axon and Stacking and leaves it alone for 3D Massing, so going back to 3D Massing keeps the focused building.
 
 **Dragging** (`ui/pointer.js`): while a drag is in progress, `drag.ov` holds a preview placement `{b, id, f, idx}`. `levelsWithOverride()` applies it during layout without changing `state.levels`. `commitDrag()` writes it to `state.levels`, and `cancelDrag()` (also bound to Escape) discards it. The drag plane is vertical and faces the camera, and the target level comes from the Y position.
 

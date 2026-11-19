@@ -12,7 +12,7 @@ const rh = await require('rhino3dm')();
 
 const doc = new rh.File3dm();
 doc.settings().modelUnitSystem = rh.UnitSystem.Feet;
-doc.applicationName = '3D Interactive Building Model';
+doc.applicationName = 'Dado';
 const layer = (name, color, parent) => {
   const l = new rh.Layer();
   l.name = name; l.color = color;

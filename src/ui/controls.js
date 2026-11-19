@@ -23,6 +23,7 @@ export function bindControls(){
     if(e.target.closest('[data-act="campus"]')) showCampus();
     else if(e.target.closest('[data-act="demo"]')) loadDemo();
     else if(e.target.closest('[data-act="resetcolors"]')) resetColors();
+    else if(e.target.closest('[data-act="bfold"]')){ state.buildingsOpen=!state.buildingsOpen; renderLeft(); leftEl.querySelector('[data-act=bfold]').focus(); }
   });
   rightEl.addEventListener('click',e=>{
     const dp=e.target.closest('[data-dept]'); if(dp){ selectDept(dp.dataset.dept); return; }

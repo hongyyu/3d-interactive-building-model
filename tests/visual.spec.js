@@ -412,8 +412,8 @@ test('printed report covers every building, level and department', async ({page}
   // listener runs after the app's, so it sees the title that names the PDF
   await page.evaluate(() => { window.printTitles = []; addEventListener('beforeprint', () => printTitles.push(document.title)); });
   await menuAction(page, '[data-act=print]');
-  expect(await page.evaluate(() => printTitles)).toEqual(['3D Interactive Building Model – Program report']);
-  await expect(page).toHaveTitle('3D Interactive Building Model');
+  expect(await page.evaluate(() => printTitles)).toEqual(['Dado – Program report']);
+  await expect(page).toHaveTitle('Dado');
   // the view picture is rendered at 2x; the model on screen must come back unchanged
   await settle(page);
   await stageShot(page, '00-initial.png', false);
@@ -587,6 +587,17 @@ test('levels can be reordered, inserted and removed from the panel', async ({pag
   await expect(page.locator('#right [data-act=fold]')).toHaveAttribute('aria-expanded', 'false');
   await page.click('#right [data-act=fold]');
   await expect(right.locator('.lvls')).toBeVisible();
+
+  // the Buildings fold button hides the building cards, and shows them again
+  const bfold = page.locator('#left [data-act=bfold]');
+  await bfold.click();
+  await expect(page.locator('#left .bcard')).toHaveCount(0);
+  await expect(bfold).toHaveAttribute('aria-expanded', 'false');
+  await expect(bfold).toBeFocused();
+  await bfold.click();
+  await expect(page.locator('#left .bcard')).toHaveCount(4);
+  await expect(page.locator('#left [data-act=campus]')).toBeVisible();
+  await expect(page.locator('#left [data-b=tower]')).toContainText('8 levels');
   expect(errors).toEqual([]);
 });
 

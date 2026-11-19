@@ -61,7 +61,7 @@ const BUILDINGS=[
 ];
 
 export const DEMO={
-  title:'3D Interactive Building Model',
+  title:'Dado',
   sub:'Fictional demo campus · placeholder figures',
   demo:true, cats:CATS, depts:DEPTS, buildings:BUILDINGS, unassigned:[]
 };

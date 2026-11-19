@@ -1,6 +1,10 @@
-# 3D Interactive Building Model
+<img src="public/favicon.svg" alt="Dado logo" width="72">
+
+# Dado
 
 Interactive massing and stacking diagrams for presenting a medical campus program to clients. Load a program from Excel, stack its departments level by level, and walk the room through it in 3D.
+
+*Dado* is the solid block of a pedestal, and Italian for a die.
 
 **[Open the live demo →](https://hongyyu.github.io/3d-interactive-building-model/)**
 
@@ -24,7 +28,7 @@ Interactive massing and stacking diagrams for presenting a medical campus progra
 3. Click a building to focus it, then switch views with `1`, `2` and `3`.
 4. Drag departments between levels. When you're done, choose **Print report (PDF)…** from the ☰ menu.
 
-The icon left of the title brings the start screen back.
+The Dado mark left of the title brings the start screen back.
 
 ## Views
 
@@ -62,6 +66,7 @@ The icon left of the title brings the start screen back.
 **Other**
 - **Highlight a category:** click its name in **Program by category** to fade everything else. Click it again to clear.
 - **Hide details:** the chevron next to the building name folds the right panel down to its title.
+- **Hide buildings:** the chevron next to **Buildings** folds the building cards away, leaving more room for **Program by category**.
 - **Reset layout** (☰ menu) restores the loaded levels, areas and placements. It leaves colours alone.
 
 ## Presenting
@@ -114,7 +119,7 @@ Departments without a building or level wait in the **Unassigned** tray. **Reset
 
 ## Use your Rhino massing
 
-The buildings don't have to come from Excel. Choose **Import Rhino massing…** from the ☰ menu (or **Import its masses (.3dm)** on the start screen) and pick a `.3dm` file. **Download Rhino example** in the same menu gives the demo campus as a Rhino model to try it with.
+The buildings don't have to come from Excel. Choose **Import Rhino massing…** from the ☰ menu (or **Import a .3dm massing** on the start screen) and pick a `.3dm` file. **Download Rhino example** in the same menu gives the demo campus as a Rhino model to try it with.
 
 - **What it reads:** every visible closed polysurface, extrusion, mesh or block. Parts that overlap in plan make one building, so a single mass, a stack of floor boxes, or a mass with floor plates all work. Hidden layers, flat site outlines and small objects are left out. Units are converted to feet, and a model turned on its site is turned to line up with the grid.
 - **Each building** becomes a rectangular floor plate (its footprint's bounding rectangle). Its levels come from User Text `levels` or `floor_to_floor` on the object or its layer, else from its floor boxes or plates, else from its height at 15 ft per floor.
@@ -169,7 +174,7 @@ npm run test:visual               # build, then run every test in headless Chrom
 | **Start screen, levels and laser** | Imports from the start screen and returns to it, adds and removes levels, resets the layout, and checks that the laser draws only while dragging. |
 | **Printed report** | Checks the report's text and pages, then overfills a level, sends a department to the tray, and checks that a second print shows both. |
 | **Toolbar shortcuts and menu** | Keyboard shortcuts, the Labels and SF settings across views, that shortcuts are ignored while typing, and the ☰ menu from the keyboard. |
-| **Level editing** | Reorders levels by dragging and with the arrow keys, cancels a drag with Escape, inserts and removes levels, and folds the right panel. |
+| **Level editing** | Reorders levels by dragging and with the arrow keys, cancels a drag with Escape, inserts and removes levels, and folds the right panel and the Buildings list. |
 | **Colour panel** | Recolours a category from the palette, the colour area and the hex field, then a department. Checks Escape, outside clicks and **Use category colour**, and that **Reset colours** restores the demo's look. |
 
 **After an intended visual change:** review the failures with `npx playwright show-report`, re-record the baselines with `npm run test:visual:update`, and commit them.

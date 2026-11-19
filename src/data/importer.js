@@ -170,7 +170,7 @@ export async function readProgramFile(file,keepBuildings){
   if(!nDepts){ errors.push('No valid departments on the Program sheet.'); return fail(); }
   if(unassigned.length) warnings.unshift(`${unassigned.length} department${unassigned.length>1?'s have':' has'} no building or level and will wait in the Unassigned tray.`);
 
-  const project={title:'3D Interactive Building Model',sub:file.name+' · imported',cats,depts,buildings,unassigned};
+  const project={title:'Dado',sub:file.name+' · imported',cats,depts,buildings,unassigned};
   // kept buildings from Rhino stay marked as such
   if(!bName&&PROJECT.massing){ project.massing=PROJECT.massing; project.sub+=' · '+PROJECT.massing; }
   const summary={file:file.name,departments:nDepts,totalSF,buildings:buildings.length,
