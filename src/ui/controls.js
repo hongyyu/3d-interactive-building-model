@@ -1,16 +1,18 @@
 import {DEPTS} from '../data/project.js';
-import {state} from '../state.js';
+import {state,deptNameTaken} from '../state.js';
 import {leftEl,rightEl,overlay} from '../dom.js';
 import {$} from '../util.js';
 import {retarget,setViewRate} from '../scene/view.js';
 import {renderLeft,renderRight} from './panels.js';
-import {selectBuilding,selectDept,setMode,setArea,moveDeptToLevel,resetLayout,addLevel,showCampus,resetColors,toggleSF} from './actions.js';
+import {selectBuilding,selectDept,setMode,setArea,moveDept,resetLayout,addLevel,showCampus,resetColors,toggleSF,deleteDept,renameDept,setDeptCat} from './actions.js';
 import {bindColorPanel,editCatColor,editDeptColor} from './colorPanel.js';
 import {bindImport,chooseImportFile,chooseMassingFile,loadDemo} from './importDialog.js';
 import {toggleLaser} from './laser.js';
 import {printReport} from './report.js';
 import {menuKeys} from './menu.js';
 import {bindLevels} from './levels.js';
+import {bindBuildings,openAddBuilding} from './buildings.js';
+import {bindDeptDialog,openAddDept} from './deptDialog.js';
 
 /* panel, overlay and toolbar clicks */
 export function bindControls(){
@@ -21,6 +23,7 @@ export function bindControls(){
     const sw=e.target.closest('[data-catcolor]'); if(sw){ editCatColor(sw.dataset.catcolor); return; }
     const cat=e.target.closest('[data-cat]'); if(cat){ state.isolate=(state.isolate===cat.dataset.cat)?null:cat.dataset.cat; renderLeft(); return; }
     if(e.target.closest('[data-act="campus"]')) showCampus();
+    else if(e.target.closest('[data-act="addbuilding"]')) openAddBuilding();
     else if(e.target.closest('[data-act="demo"]')) loadDemo();
     else if(e.target.closest('[data-act="import"]')) chooseImportFile();
     else if(e.target.closest('[data-act="resetcolors"]')) resetColors();
@@ -36,11 +39,26 @@ export function bindControls(){
     else if(a==='inc'&&id) setArea(id,DEPTS[id].a+500);
     else if(a==='dec'&&id) setArea(id,DEPTS[id].a-500);
     else if(a==='addlevel') addLevel(state.sel);
+    else if(a==='adddept') openAddDept();
+    else if(a==='deldept'&&id) deleteDept(id);
     else if(a==='fold'){ state.panelOpen=!state.panelOpen; renderRight(); rightEl.querySelector('[data-act=fold]').focus(); }
   });
   rightEl.addEventListener('change',e=>{
-    if(e.target.id==='area') setArea(state.selDept,parseFloat(e.target.value));
-    else if(e.target.id==='lvl') moveDeptToLevel(state.selDept,parseInt(e.target.value,10));
+    const t=e.target, id=state.selDept;
+    if(t.id==='area') setArea(id,parseFloat(t.value));
+    else if(t.id==='lvl'){
+      // a level of another building is "bid:f"
+      const [b,f]=t.value.includes(':')?t.value.split(':'):[state.sel,t.value];
+      moveDept(id,b,parseInt(f,10));
+    }
+    else if(t.id==='dcat') setDeptCat(id,t.value);
+    else if(t.id==='dname') commitName(t,id);
+  });
+  rightEl.addEventListener('input',e=>{ if(e.target.id==='dname') e.target.setCustomValidity(''); });
+  rightEl.addEventListener('keydown',e=>{
+    if(e.target.id!=='dname') return;
+    if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); }
+    else if(e.key==='Escape'&&state.selDept){ e.target.value=DEPTS[state.selDept].n; e.target.blur(); }
   });
   overlay.addEventListener('click',e=>{
     const t=e.target.closest('.btag'); if(t) selectBuilding(t.dataset.b,true);
@@ -66,8 +84,19 @@ export function bindControls(){
   });
   bindToolbarUI();
   bindLevels();
+  bindBuildings();
+  bindDeptDialog();
 }
 
+/* a department name must be new and not empty; an empty one goes back to the old name, and a taken
+   one is refused with a note on the field */
+function commitName(input,id){
+  const name=input.value.trim().replace(/\s+/g,' ');
+  if(!id||!DEPTS[id]) return;
+  if(!name||name===DEPTS[id].n){ input.value=DEPTS[id].n; return; }
+  if(deptNameTaken(name,id)){ input.setCustomValidity('Another department already has this name.'); input.reportValidity(); return; }
+  renameDept(id,name);
+}
 function toggleLabels(){
   state.labels=!state.labels;
   $('#tools [data-act=labels]').setAttribute('aria-pressed',String(state.labels));

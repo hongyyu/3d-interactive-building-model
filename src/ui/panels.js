@@ -5,7 +5,7 @@ import {esc,fmt,fk} from '../util.js';
 import {B} from '../scene/scene.js';
 import {updateFloorTagText} from '../scene/overlay.js';
 import {floorStat,levelOf} from '../layout/plan.js';
-import {MAX_LEVELS} from '../scene/constants.js';
+import {MAX_LEVELS,MAX_BUILDINGS} from '../scene/constants.js';
 
 /* program SF of building bid by category key */
 function programByCat(bid){
@@ -17,7 +17,9 @@ const FOLD='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 12.2 10 7.
 const CAMPUS_ICON='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.6 16.8h14.8M4 16.8V7.2l4-2v11.6M8 8.4l4.2-1.8v10.2M12.2 10.4l3.8 1.4v5"/></svg>';
 export function renderLeft(){
   const ov=isOverview(), open=state.buildingsOpen, tip=open?'Hide buildings':'Show buildings';
+  const full=BUILDINGS.length>=MAX_BUILDINGS;
   let h='<section class="blk"><div class="shead"><h2 class="h">Buildings</h2>'+
+    (open?'<button type="button" class="mini" data-act="addbuilding" aria-haspopup="dialog"'+(full?' disabled title="A project holds up to '+MAX_BUILDINGS+' buildings"':' title="Add a building to the campus"')+'>+ Add building</button>':'')+
     '<button type="button" class="pfold sm" data-act="bfold" aria-expanded="'+open+'" aria-label="'+tip+'" title="'+tip+'">'+FOLD+'</button></div>';
   if(open){
     let all=0, cards='';
@@ -47,16 +49,18 @@ export function renderLeft(){
        '<button type="button" data-cat="'+k+'"><span>'+esc(c.name)+'</span><em>'+(a?fk(a):'–')+'</em></button></div>';
   }
   // buildings from Rhino come in without a program until one is imported
-  if(!Object.keys(CATS).length) h+='<p class="note">No program loaded yet. <button type="button" class="link" data-act="import">Import program…</button></p>';
+  if(!Object.keys(DEPTS).length) h+='<p class="note">No program loaded yet. <button type="button" class="link" data-act="import">Import program…</button></p>';
   h+='</div><button type="button" class="link" data-act="resetcolors"'+(colorsEdited()?'':' hidden')+' title="Go back to the colours of the loaded program">Reset colours</button></section>';
   leftEl.innerHTML=h;
 }
 const GRIP='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5.5" r="1.3"/><circle cx="12.5" cy="5.5" r="1.3"/><circle cx="7.5" cy="10" r="1.3"/><circle cx="12.5" cy="10" r="1.3"/><circle cx="7.5" cy="14.5" r="1.3"/><circle cx="12.5" cy="14.5" r="1.3"/></svg>';
 const MORE='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="15" cy="10" r="1.4"/></svg>';
-/* the right panel's title row, with the button that hides everything below it (state.panelOpen) */
-function panelHead(eyebrow,title){
+/* the right panel's title row, with the button that hides everything below it (state.panelOpen); with
+   more, also the ⋯ button of the building menu (#buildingMenu, ui/buildings.js) */
+function panelHead(eyebrow,title,more){
   const open=state.panelOpen, tip=open?'Hide details':'Show details';
   return '<div class="phead"><div><p class="eyebrow">'+eyebrow+'</p><h2 class="title">'+title+'</h2></div>'+
+    (more?'<button type="button" class="pfold pmore" data-act="bldmenu" aria-label="Building actions" title="Building actions" aria-haspopup="menu" aria-expanded="false" aria-controls="buildingMenu">'+MORE+'</button>':'')+
     '<button type="button" class="pfold" data-act="fold" aria-expanded="'+open+'" aria-label="'+tip+'" title="'+tip+'">'+FOLD+'</button></div>';
 }
 /* the right panel in the campus overview: totals, the tray, and each building's program mix */
@@ -87,26 +91,38 @@ export function renderRight(){
   const bid=state.sel, def=BDEF[bid], lv=state.levels[bid], n=lv.length, plate=def.w*def.d;
   let prog=0; lv.forEach(a=>a.forEach(i=>{prog+=DEPTS[i].a;}));
   const gsf=plate*n, pct=Math.round(prog/gsf*100);
-  if(!state.panelOpen){ rightEl.innerHTML='<section class="blk">'+panelHead('Selected building',esc(def.name))+'</section>'; return; }
-  let h='<section class="blk">'+panelHead('Selected building',esc(def.name))+
+  if(!state.panelOpen){ rightEl.innerHTML='<section class="blk">'+panelHead('Selected building',esc(def.name),true)+'</section>'; return; }
+  let h='<section class="blk">'+panelHead('Selected building',esc(def.name),true)+
     '<dl class="kv"><div><dt>Levels</dt><dd>'+n+'</dd></div><div><dt>Floor plate</dt><dd>'+fmt(plate)+' SF</dd></div>'+
     '<div><dt>Gross area</dt><dd>'+fmt(gsf)+' SF</dd></div><div><dt>Program</dt><dd>'+fmt(prog)+' SF · '+pct+'%</dd></div></dl></section>';
   const sd=state.selDept, loc=sd?levelOf(bid,sd):null, tray=sd!=null&&state.unassigned.includes(sd);
   if(sd&&(loc||tray)){
     const dd=DEPTS[sd], cat=CATS[dd.c];
-    let opts=''; for(let f=n-1;f>=0;f--) opts+='<option value="'+f+'"'+(loc&&f===loc.f?' selected':'')+'>Level '+(f+1)+'</option>';
+    // the selected building's levels (value f), then every other building's (value bid:f), then the tray
+    const group=(b,own)=>{
+      let o=''; for(let f=state.levels[b.id].length-1;f>=0;f--) o+='<option value="'+(own?f:b.id+':'+f)+'"'+(own&&loc&&f===loc.f?' selected':'')+'>Level '+(f+1)+'</option>';
+      return '<optgroup label="'+esc(b.name)+'">'+o+'</optgroup>';
+    };
+    let opts=group(def,true);
+    BUILDINGS.forEach(b=>{ if(b.id!==bid) opts+=group(b,false); });
     opts+='<option value="-1"'+(tray?' selected':'')+'>Unassigned</option>';
-    h+='<section class="dcard"><div class="dhead"><i style="background:'+deptColor(sd)+'"></i><div><h3>'+esc(dd.n)+'</h3><p>'+esc(cat.name)+' · '+(tray?'Unassigned':'Level '+(loc.f+1))+'</p></div>'+
+    let cats=''; for(const k in CATS) cats+='<option value="'+k+'"'+(k===dd.c?' selected':'')+'>'+esc(CATS[k].name)+'</option>';
+    h+='<section class="dcard"><div class="dhead"><i style="background:'+deptColor(sd)+'"></i><div>'+
+       '<input id="dname" class="dname" type="text" maxlength="80" autocomplete="off" spellcheck="false" aria-label="Department name" title="Rename" value="'+esc(dd.n)+'">'+
+       '<p>'+esc(cat.name)+' · '+(tray?'Unassigned':'Level '+(loc.f+1))+'</p></div>'+
        '<button type="button" class="x" data-act="desel" aria-label="Clear selection">×</button></div>'+
        '<label for="area">Area (SF)</label><div class="step"><button type="button" data-act="dec" aria-label="Decrease area">−</button>'+
        '<input id="area" type="number" step="500" min="500" max="500000" value="'+dd.a+'"><button type="button" data-act="inc" aria-label="Increase area">+</button></div>'+
-       '<label for="lvl">'+(tray?'Place in '+esc(def.name):'Level')+'</label><select id="lvl">'+opts+'</select>'+
+       '<label for="lvl">'+(tray?'Place in':'Level')+'</label><select id="lvl">'+opts+'</select>'+
+       '<label for="dcat">Category</label><select id="dcat">'+cats+'</select>'+
        '<label for="dcol">Colour</label><button type="button" class="cfield" id="dcol" aria-haspopup="dialog" aria-expanded="'+(state.picking==='dept:'+sd)+'">'+
        '<i style="background:'+deptColor(sd)+'"></i><span>'+deptColor(sd).toUpperCase()+'</span><em>'+(dd.color?'Custom':'Category colour')+'</em></button>'+
        (dd.notes?'<p class="dnotes">'+esc(dd.notes)+'</p>':'')+
-       '<p class="note">'+Math.round(dd.a/plate*100)+'% of a '+fmt(plate)+' SF floor plate</p></section>';
+       '<p class="note">'+Math.round(dd.a/plate*100)+'% of a '+fmt(plate)+' SF floor plate</p>'+
+       '<button type="button" class="link danger" data-act="deldept" title="Take this department out of the program">Delete department</button></section>';
   } else {
-    h+='<p class="note">Select a department in the model or the list below to edit its area or level. Drag it to move it.</p>';
+    h+=prog?'<p class="note">Select a department in the model or the list below to edit its area or level. Drag it to move it.</p>':
+      '<p class="note">No departments here yet. Use + Add department, or select a department in another building and pick a level of '+esc(def.name)+' in its Level list.</p>';
   }
   if(state.unassigned.length){
     h+='<section class="blk"><h2 class="h">Unassigned · '+state.unassigned.length+'</h2>'+
@@ -114,9 +130,10 @@ export function renderRight(){
        '<div class="chips">'+state.unassigned.map(id=>chip(id,sd===id)).join('')+'</div></section>';
   }
   // each level row: a grip to drag it to another level, and a menu to insert a level next to it or remove it
-  h+='<section class="blk"><div class="lvhead"><h2 class="h">Levels</h2>'+
+  h+='<section class="blk"><div class="lvhead"><h2 class="h">Levels</h2><span class="lvacts">'+
+     '<button type="button" class="mini" data-act="adddept" aria-haspopup="dialog" title="Add a department to '+esc(def.name)+'">+ Add department</button>'+
      '<button type="button" class="mini" data-act="addlevel"'+(n<MAX_LEVELS?'':' disabled')+' title="Add an empty Level '+(n+1)+' on top of '+esc(def.name)+'">+ Add level</button>'+
-     '</div><div class="lvls">';
+     '</span></div><div class="lvls">';
   for(let f=n-1;f>=0;f--){
     const st=floorStat(bid,f), den=Math.max(st.plate,st.total);
     let bar='', chips='';

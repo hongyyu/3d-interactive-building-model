@@ -102,6 +102,10 @@
   </main>
   <aside class="side right" id="right"></aside>
   <div class="menu lvmenu" id="levelMenu" role="menu" aria-label="Level actions" hidden>
+    <button type="button" role="menuitem" data-act="lvl-dept">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.4" y="5.4" width="13.2" height="9.2" rx="1"/><path d="M10 7.6v4.8M7.6 10h4.8"/></svg>Add department here…
+    </button>
+    <hr>
     <button type="button" role="menuitem" data-act="lvl-above">
       <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.4" y="11.6" width="13.2" height="5" rx="1"/><path d="M10 3.2v6M7 6.2h6"/></svg>Insert level above
     </button>
@@ -111,6 +115,15 @@
     <hr>
     <button type="button" role="menuitem" data-act="lvl-remove">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.8 5.6h12.4M8 5.6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.6M5.4 5.6l.8 10.2a1.4 1.4 0 0 0 1.4 1.3h4.8a1.4 1.4 0 0 0 1.4-1.3l.8-10.2"/></svg><span>Remove level<small></small></span>
+    </button>
+  </div>
+  <div class="menu lvmenu" id="buildingMenu" role="menu" aria-label="Building actions" hidden>
+    <button type="button" role="menuitem" data-act="bld-edit">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.6 4.4 15.6 7.4 7.4 15.6H4.4v-3zM10.8 6.2l3 3"/></svg>Edit building…
+    </button>
+    <hr>
+    <button type="button" role="menuitem" data-act="bld-delete">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.8 5.6h12.4M8 5.6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.6M5.4 5.6l.8 10.2a1.4 1.4 0 0 0 1.4 1.3h4.8a1.4 1.4 0 0 0 1.4-1.3l.8-10.2"/></svg><span>Delete building<small></small></span>
     </button>
   </div>
 </div>
@@ -173,6 +186,39 @@
       <button type="submit" class="btn" value="cancel">Cancel</button>
       <button type="button" class="btn" id="importOkProg" hidden>Replace, then import program…</button>
       <button type="submit" class="btn primary" value="ok" id="importOk">Replace project</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="dlg bdlg" id="buildingDlg" aria-labelledby="bdTitle">
+  <form method="dialog" id="buildingForm">
+    <div><p class="eyebrow" id="bdKind">Campus</p><h2 class="title" id="bdTitle">Add a building</h2></div>
+    <div class="fgrid">
+      <label class="full">Name<input id="bdName" type="text" maxlength="60" autocomplete="off" spellcheck="false" required></label>
+      <label>Width (ft)<input id="bdW" type="number" min="20" max="1000" step="any" required></label>
+      <label>Depth (ft)<input id="bdD" type="number" min="20" max="1000" step="any" required></label>
+      <label>Floor to floor (ft)<input id="bdFh" type="number" min="8" max="40" step="any" required></label>
+      <label id="bdNWrap">Levels<input id="bdN" type="number" min="1" step="1" required></label>
+    </div>
+    <p class="note" id="bdSum" aria-live="polite"></p>
+    <div class="dlg-actions">
+      <button type="submit" class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button type="submit" class="btn primary" value="ok" id="bdOk">Add building</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="dlg bdlg" id="deptDlg" aria-labelledby="ddTitle">
+  <form method="dialog" id="deptForm">
+    <div><p class="eyebrow" id="ddKind"></p><h2 class="title" id="ddTitle">Add a department</h2></div>
+    <div class="fgrid">
+      <label class="full">Name<input id="ddName" type="text" maxlength="80" autocomplete="off" spellcheck="false" required></label>
+      <label class="full">Category<select id="ddCat"></select></label>
+      <label>Area (SF)<input id="ddArea" type="number" min="500" max="500000" step="any" required></label>
+      <label>Level<select id="ddLvl"></select></label>
+    </div>
+    <p class="note" id="ddSum" aria-live="polite"></p>
+    <div class="dlg-actions">
+      <button type="submit" class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button type="submit" class="btn primary" value="ok">Add department</button>
     </div>
   </form>
 </dialog>

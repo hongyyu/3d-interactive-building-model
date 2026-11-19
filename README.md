@@ -50,13 +50,21 @@ The Dado mark left of the title brings the start screen back.
 
 **Departments**
 - **Move:** drag a department to another level or position. In Stacking, drag up or down to change its level and sideways to reorder. Escape cancels the drag.
-- **Edit:** click a department to open its card in the right panel. Change its area with − / + or by typing, pick a level, or change its colour.
+- **Edit:** click a department to open its card in the right panel. Rename it by editing its name, change its area with − / + or by typing, or change its category or colour.
+- **Move to another building:** the card's **Level** list holds every building's levels, so a department can go straight into a building you just added. The view follows it.
+- **Add:** **+ Add department** (next to **Levels**) or **Add department here…** in a level's ⋯ menu asks for the name, category, SF and level, and shows how full that level gets.
+- **Delete department** on the card takes it out of the program.
 - **Unassigned tray:** departments without a level wait in the right panel. Select one and pick a level to place it in the focused building.
 
 **Levels** (right panel)
 - **Reorder:** drag a level by its grip, or focus the grip and press ↑ ↓. The building follows as you drag, and Escape cancels.
 - **Insert or remove:** each level's ⋯ menu inserts an empty level above or below it, or removes it. A removed level's departments go to the Unassigned tray.
 - **+ Add level** puts an empty level on top.
+
+**Buildings**
+- **+ Add building** (left panel, next to **Buildings**) asks for a name, floor plate (width × depth), floor-to-floor height and number of levels. The new building goes on a free spot of the site where the 3D view can see it, and opens with empty levels ready for departments. The next one starts from the same sizes.
+- **Edit:** **Edit building…** in the ⋯ menu next to the building name (right panel) changes its name, floor plate and floor-to-floor height. It stays where it is on the site, and the dialog warns when the new plate would overlap a neighbour.
+- **Delete:** the same ⋯ menu deletes the focused building. Its departments go to the Unassigned tray. A project keeps at least one building.
 
 **Colours**
 - Click a category swatch in **Program by category** (left panel), or a department's Colour field, to open the colour panel. Pick from the palette or the colour area, or type a hex code. Changes apply at once.
@@ -67,7 +75,7 @@ The Dado mark left of the title brings the start screen back.
 - **Highlight a category:** click its name in **Program by category** to fade everything else. Click it again to clear.
 - **Hide details:** the chevron next to the building name folds the right panel down to its title.
 - **Hide buildings:** the chevron next to **Buildings** folds the building cards away, leaving more room for **Program by category**.
-- **Reset layout** (☰ menu) restores the loaded levels, areas and placements. It leaves colours alone.
+- **Reset layout** (☰ menu) goes back to the loaded program and buildings: added buildings and departments go, deleted ones come back, and names, sizes, categories, areas and placements are restored. It leaves colours alone.
 
 ## Presenting
 

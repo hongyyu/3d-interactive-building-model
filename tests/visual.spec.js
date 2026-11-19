@@ -655,6 +655,189 @@ test('levels can be reordered, inserted and removed from the panel', async ({pag
   expect(errors).toEqual([]);
 });
 
+test('buildings can be added and deleted', async ({page}) => {
+  const errors = await open(page);
+  const left = page.locator('#left'), right = page.locator('#right'), dlg = page.locator('#buildingDlg');
+  const sum = page.locator('#bdSum');
+
+  // the dialog suggests a new name and sizes, and refuses a name another building has
+  await page.click('#left [data-act=addbuilding]');
+  await expect(dlg).toBeVisible();
+  await expect(page.locator('#bdName')).toHaveValue('Building 5');
+  await expect(sum).toHaveText('21,600 SF floor plate · 4 levels · 86,400 GSF. It goes on a free spot of the site.');
+  await page.fill('#bdName', 'hospital tower');
+  await page.click('#buildingDlg button[value=ok]');
+  await expect(dlg).toBeVisible();
+  expect(await page.$eval('#bdName', e => e.validationMessage)).toBe('Another building already has this name.');
+  await page.fill('#bdName', 'Research Pavilion');
+  await page.fill('#bdW', '160');
+  await page.fill('#bdN', '5');
+  await expect(sum).toContainText('19,200 SF floor plate · 5 levels · 96,000 GSF');
+  await page.click('#buildingDlg button[value=ok]');
+  await expect(dlg).toBeHidden();
+
+  // the new building is focused with its empty levels, and stands where the camera sees it
+  await expect(left.locator('.bcard')).toHaveCount(5);
+  await expect(left.locator('.bcard.on')).toContainText('Research Pavilion5 levels · 96,000 GSF');
+  await expect(right.locator('.title')).toHaveText('Research Pavilion');
+  await expect(right.locator('.lvl')).toHaveCount(5);
+  await expect(right.locator('.lvl').first()).toContainText('Empty level');
+  await expect(page.locator('#left [data-act=addbuilding]')).toBeFocused();
+  await settle(page);
+  await stageShot(page, 'building-added.png');
+  await page.click('#left [data-act=campus]');
+  await expect(right.locator('.kv')).toContainText('Buildings5');
+  await settle(page);
+  await stageShot(page, 'building-added-campus.png');
+
+  // the next dialog keeps the last sizes; Cancel adds nothing
+  await page.click('#left [data-act=addbuilding]');
+  await expect(page.locator('#bdName')).toHaveValue('Building 6');
+  await expect(sum).toContainText('19,200 SF floor plate · 5 levels');
+  await page.click('#buildingDlg button[value=cancel]');
+  await expect(left.locator('.bcard')).toHaveCount(5);
+
+  // Edit building (⋯ menu) renames and resizes a building in place, and warns when the new plate
+  // would overlap a neighbour
+  const more = page.locator('#right [data-act=bldmenu]');
+  await page.click('#left [data-b=b1]');
+  await more.click();
+  await page.click('#buildingMenu [data-act=bld-edit]');
+  await expect(page.locator('#bdTitle')).toHaveText('Edit building');
+  await expect(page.locator('#bdName')).toHaveValue('Research Pavilion');
+  await expect(page.locator('#bdNWrap')).toBeHidden();
+  await page.fill('#bdW', '320');
+  await expect(sum).toHaveText('38,400 SF floor plate · 5 levels · 192,000 GSF. It would overlap Diagnostic & Treatment.');
+  await page.fill('#bdName', 'Research Center');
+  await page.fill('#bdW', '180');
+  await page.fill('#bdD', '130');
+  await expect(sum).toHaveText('23,400 SF floor plate · 5 levels · 117,000 GSF.');
+  await page.click('#bdOk');
+  await expect(dlg).toBeHidden();
+  await expect(left.locator('.bcard.on')).toContainText('Research Center5 levels · 117,000 GSF');
+  await expect(right.locator('.title')).toHaveText('Research Center');
+  await expect(right.locator('.kv')).toContainText('Floor plate23,400 SF');
+  await expect(more).toBeFocused();
+  await settle(page);
+  await stageShot(page, 'building-edited.png');
+
+  // the ⋯ menu deletes the focused building: its departments go to the tray and 3D Massing goes
+  // back to the campus overview; it opens from the keyboard and Escape returns focus to it
+  await page.click('#left [data-b=tower]');
+  const del = page.locator('#buildingMenu [data-act=bld-delete]');
+  await more.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#buildingMenu [data-act=bld-edit]')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(del).toBeFocused();
+  await expect(del).toHaveText(/Delete Hospital Tower\s*16 departments move to Unassigned/);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#buildingMenu')).toBeHidden();
+  await expect(more).toBeFocused();
+  await more.click();
+  await del.click();
+  await expect(left.locator('.bcard')).toHaveCount(4);
+  await expect(left).not.toContainText('Hospital Tower');
+  await expect(page.locator('#left [data-act=campus]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(right.locator('.blk', {hasText: 'Unassigned · 16'})).toBeVisible();
+  await settle(page);
+  await stageShot(page, 'building-deleted.png');
+
+  // Reset layout brings the tower back and drops the added building, so the stage matches the
+  // scenario's first step
+  await menuAction(page, '[data-act=resetlayout]');
+  await expect(left.locator('.bcard .bn')).toHaveText(['Hospital Tower', 'Diagnostic & Treatment', 'Outpatient Pavilion', 'Central Utility Plant']);
+  await expect(right).not.toContainText('Unassigned');
+  await settle(page);
+  await stageShot(page, '00-initial.png');
+  expect(errors).toEqual([]);
+});
+
+test('departments can be added, edited, moved and deleted', async ({page}) => {
+  const errors = await open(page);
+  const right = page.locator('#right'), card = right.locator('.dcard'), dlg = page.locator('#deptDlg');
+  const sum = page.locator('#ddSum'), row = f => right.locator(`.lvl[data-f="${f}"]`);
+
+  // a new building starts empty and says how to fill it
+  await page.click('#left [data-act=addbuilding]');
+  await page.click('#bdOk');
+  await expect(right.locator('.title')).toHaveText('Building 5');
+  await expect(right).toContainText('No departments here yet.');
+
+  // + Add department suggests a new name and the roomiest level, and refuses a name in use
+  await page.click('#right [data-act=adddept]');
+  await expect(dlg).toBeVisible();
+  await expect(page.locator('#ddKind')).toHaveText('Building 5');
+  await expect(page.locator('#ddName')).toHaveValue('New department');
+  await expect(page.locator('#ddLvl')).toHaveValue('0');
+  await expect(sum).toHaveText('Level 1 then holds 5,000 of its 21,600 SF.');
+  await page.fill('#ddName', 'pharmacy');
+  await page.click('#deptDlg button[value=ok]');
+  await expect(dlg).toBeVisible();
+  expect(await page.$eval('#ddName', e => e.validationMessage)).toBe('Another department already has this name.');
+  await page.fill('#ddName', 'Sleep Lab');
+  await page.selectOption('#ddCat', 'diag');
+  await page.selectOption('#ddLvl', '1');
+  await page.fill('#ddArea', '24000');
+  await expect(sum).toHaveText('Level 2 then holds 24,000 of its 21,600 SF, over by 2,400 SF.');
+  await page.fill('#ddArea', '9000');
+  await page.click('#deptDlg button[value=ok]');
+  await expect(dlg).toBeHidden();
+  // the new department is selected, so its card is open
+  await expect(page.locator('#dname')).toHaveValue('Sleep Lab');
+  await expect(card).toContainText('Diagnostic & Imaging · Level 2');
+  await expect(row(1)).toContainText('9,000 / 21,600 SF');
+  await expect(page.locator('#right [data-act=adddept]')).toBeFocused();
+
+  // the card renames it, refusing a name in use, and changes its category
+  await page.fill('#dname', 'Pharmacy');
+  await page.press('#dname', 'Enter');
+  expect(await page.$eval('#dname', e => e.validationMessage)).toBe('Another department already has this name.');
+  await expect(row(1).locator('.chip')).toHaveText(/Sleep Lab/);
+  await page.fill('#dname', 'Sleep Medicine');
+  await page.press('#dname', 'Enter');
+  await expect(row(1).locator('.chip')).toHaveText(/Sleep Medicine/);
+  await page.selectOption('#dcat', 'amb');
+  await expect(card).toContainText('Ambulatory & Clinics · Level 2');
+
+  // a level's ⋯ menu adds a department on that level, in the selected department's category
+  await levelAction(page, 3, 'lvl-dept');
+  await expect(page.locator('#ddLvl')).toHaveValue('3');
+  await expect(page.locator('#ddCat')).toHaveValue('amb');
+  await page.fill('#ddName', 'Sleep Clinic');
+  await page.click('#deptDlg button[value=ok]');
+  await expect(row(3)).toContainText('Sleep Clinic');
+
+  // the Level list reaches every building: the tower's Laboratory moves to Level 3 here, and the
+  // view follows it
+  await page.click('#left [data-b=tower]');
+  await right.locator('.chip[data-dept=lab]').click();
+  await page.selectOption('#lvl', 'b1:2');
+  await expect(right.locator('.title')).toHaveText('Building 5');
+  await expect(card).toContainText('Diagnostic & Imaging · Level 3');
+  await expect(row(2)).toContainText('Laboratory');
+  await settle(page);
+  await stageShot(page, 'program-added.png');
+
+  // Delete department takes it out of the program
+  await right.locator('.chip', {hasText: 'Sleep Medicine'}).click();
+  await page.click('#right [data-act=deldept]');
+  await expect(card).toHaveCount(0);
+  await expect(right).not.toContainText('Sleep Medicine');
+  await expect(page.locator('#overlay .lbl b', {hasText: 'Sleep Medicine'})).toHaveCount(0);
+
+  // Reset layout goes back to the loaded program and buildings, so the stage matches the scenario's
+  // first step
+  await menuAction(page, '[data-act=resetlayout]');
+  await expect(page.locator('#left .bcard')).toHaveCount(4);
+  await expect(page.locator('#overlay .lbl')).toHaveCount(36);
+  await settle(page);
+  await stageShot(page, '00-initial.png');
+  await page.click('#left [data-b=tower]');
+  await expect(row(2)).toContainText('Laboratory');
+  expect(errors).toEqual([]);
+});
+
 test('colour panel', async ({page}) => {
   const errors = await open(page);
   const left = page.locator('#left'), right = page.locator('#right'), panel = page.locator('#colorPanel');

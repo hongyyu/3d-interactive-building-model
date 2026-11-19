@@ -1,9 +1,12 @@
 import {CATS,DEPTS,BUILDINGS,UNASSIGNED} from './data/project.js';
 
 /* state.levels[bid] and state.unassigned are the live stacking; INIT_* snapshot the loaded project
-   for "Reset layout" and "Reset colours" (a department without its own colour is stored as '') */
-export const BDEF={}, INIT_AREAS={}, INIT_CAT_COLORS={}, INIT_DEPT_COLORS={};
-export let INIT_LEVELS='';
+   for "Reset layout" and "Reset colours" (a department without its own colour is stored as '').
+   INIT_LAYOUT is JSON of the loaded buildings (with their loaded levels), departments and tray, so
+   Reset layout can also bring back deleted buildings and departments, drop added ones and undo
+   renames and resizes. */
+export const BDEF={}, INIT_CAT_COLORS={}, INIT_DEPT_COLORS={};
+export let INIT_LAYOUT='';
 export const state={mode:'mass',focus:'campus',sel:null,selDept:null,labels:true,sf:true,isolate:null,levels:{},unassigned:[],panelOpen:true,buildingsOpen:true,picking:null};
 
 /* state.labels / state.sf: whether department labels show, and whether they show their SF line, in
@@ -19,10 +22,10 @@ export function isOverview(){ return state.mode==='mass'&&state.focus==='campus'
 /* resets selection and stacking to the freshly loaded project; the view mode and label settings are kept */
 export function initState(){
   for(const k in BDEF) delete BDEF[k];
-  [INIT_AREAS,INIT_CAT_COLORS,INIT_DEPT_COLORS].forEach(o=>{ for(const k in o) delete o[k]; });
+  [INIT_CAT_COLORS,INIT_DEPT_COLORS].forEach(o=>{ for(const k in o) delete o[k]; });
   BUILDINGS.forEach(b=>{BDEF[b.id]=b;});
-  INIT_LEVELS=JSON.stringify({levels:BUILDINGS.map(b=>b.levels),unassigned:UNASSIGNED});
-  for(const k in DEPTS){ INIT_AREAS[k]=DEPTS[k].a; INIT_DEPT_COLORS[k]=DEPTS[k].color||''; }
+  INIT_LAYOUT=JSON.stringify({buildings:BUILDINGS,depts:DEPTS,unassigned:UNASSIGNED});
+  for(const k in DEPTS) INIT_DEPT_COLORS[k]=DEPTS[k].color||'';
   for(const k in CATS) INIT_CAT_COLORS[k]=CATS[k].color;
   state.sel=BUILDINGS[0].id; state.focus=state.mode==='mass'?'campus':'building';
   state.selDept=null; state.isolate=null;
@@ -30,11 +33,23 @@ export function initState(){
   state.unassigned=UNASSIGNED.slice();
 }
 
-/* true when a category or department colour differs from the loaded project */
+/* true when a category or department colour differs from the loaded project; a department added in
+   the app counts as edited only once it has its own colour */
 export function colorsEdited(){
   for(const k in CATS) if(CATS[k].color!==INIT_CAT_COLORS[k]) return true;
-  for(const k in DEPTS) if((DEPTS[k].color||'')!==INIT_DEPT_COLORS[k]) return true;
+  for(const k in DEPTS) if((DEPTS[k].color||'')!==(INIT_DEPT_COLORS[k]||'')) return true;
   return false;
+}
+/* true when another department than except already has this name (ignoring case) */
+export function deptNameTaken(name,except){
+  const n=name.toLowerCase();
+  for(const k in DEPTS) if(k!==except&&DEPTS[k].n.toLowerCase()===n) return true;
+  return false;
+}
+/* true when another building than except already has this name (ignoring case) */
+export function buildingNameTaken(name,except){
+  const n=name.toLowerCase();
+  return BUILDINGS.some(b=>b.id!==except&&b.name.toLowerCase()===n);
 }
 
 /* transient pointer state; only ui/pointer.js changes it */

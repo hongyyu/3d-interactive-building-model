@@ -254,7 +254,8 @@ function massOf(parts,u){
    with every department of the buildings no mass takes from, wait in the Unassigned tray. levels and
    unassigned are the live stacking (state.levels, state.unassigned).
    Without a program of the user's (PROJECT.program is empty: the demo's is loaded) the buildings
-   come in empty, with no departments or categories, until a program is imported. */
+   come in empty, with no departments, until a program is imported. The categories stay, as a palette
+   for departments added in the app. */
 export function massingProject(masses,levels,unassigned,fileName){
   const keep=!!PROJECT.program, tray=keep?unassigned.slice():[], used={};
   let over=0;
@@ -268,9 +269,9 @@ export function massingProject(masses,levels,unassigned,fileName){
     return {id:'b'+(i+1),name:m.name,w:m.w,d:m.d,fh:m.fh,x:m.x,z:m.z,levels:lv};
   });
   const cats={}, depts={};
+  for(const k in CATS) cats[k]={...CATS[k]};
   if(keep){
     for(const bid in levels) if(!used[bid]) levels[bid].forEach(ids=>tray.push(...ids));
-    for(const k in CATS) cats[k]={...CATS[k]};
     for(const k in DEPTS) depts[k]={...DEPTS[k]};
   }
   const base=keep?String(PROJECT.sub||'').replace(/ · [^·]*\.3dm$/i,''):'';
